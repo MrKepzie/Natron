@@ -115,3 +115,7 @@ your local repository's `.git/hooks/` directory like:
 Pull requests that don't match the project code style are still likely to be
 accepted after manually formatting and amending your changeset. The formatting
 tool (`astyle`) is completely automated; please try to use it.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/MrKepzie/natron/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
