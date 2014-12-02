@@ -1861,7 +1861,7 @@ AppManager::fetchAndAddNRunningThreads(int nThreads)
 int
 AppManager::getNRunningThreads() const
 {
-    return (int)_imp->runningThreadsCount;
+    return _imp->runningThreadsCount.load();
 }
 
 void
