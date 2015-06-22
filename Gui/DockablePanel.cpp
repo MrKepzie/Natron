@@ -69,6 +69,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/NodeGui.h"
 #include "Gui/ComboBox.h"
+#include "Gui/DopeSheet.h"
 #include "Gui/Histogram.h"
 #include "Gui/KnobGui.h"
 #include "Gui/KnobGuiTypes.h" // for Group_KnobGui
@@ -1731,6 +1732,7 @@ DockablePanel::setClosed(bool c)
 
         if (!c) {
             gui->addNodeGuiToCurveEditor(nodeGui);
+            gui->addNodeGuiToDopeSheetEditor(nodeGui);
             
             NodeList children;
             internalNode->getChildrenMultiInstance(&children);
@@ -1740,10 +1742,12 @@ DockablePanel::setClosed(bool c)
                 boost::shared_ptr<NodeGui> childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                 assert(childGui);
                 gui->addNodeGuiToCurveEditor(childGui);
+                gui->addNodeGuiToDopeSheetEditor(childGui);
             }
         } else {
             gui->removeNodeGuiFromCurveEditor(nodeGui);
-            
+            gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
+
             NodeList children;
             internalNode->getChildrenMultiInstance(&children);
             for (NodeList::iterator it = children.begin() ; it != children.end(); ++it) {
@@ -1752,6 +1756,7 @@ DockablePanel::setClosed(bool c)
                 boost::shared_ptr<NodeGui> childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
                 assert(childGui);
                 gui->removeNodeGuiFromCurveEditor(childGui);
+                gui->removeNodeGuiFromDopeSheetEditor(childGui);
             }
         }
         
@@ -1817,6 +1822,7 @@ DockablePanel::closePanel()
         boost::shared_ptr<NodeGui> nodeGui = nodePanel->getNode();
         boost::shared_ptr<Natron::Node> internalNode = nodeGui->getNode();
         _imp->_gui->removeNodeGuiFromCurveEditor(nodeGui);
+        _imp->_gui->removeNodeGuiFromDopeSheetEditor(nodeGui);
         
         NodeList children;
         internalNode->getChildrenMultiInstance(&children);
@@ -1826,6 +1832,7 @@ DockablePanel::closePanel()
             boost::shared_ptr<NodeGui> childGui = boost::dynamic_pointer_cast<NodeGui>(gui_i);
             assert(childGui);
             _imp->_gui->removeNodeGuiFromCurveEditor(childGui);
+            _imp->_gui->removeNodeGuiFromDopeSheetEditor(childGui);
         }
         
         
@@ -2495,6 +2502,9 @@ DockablePanel::scanForNewKnobs()
         boost::shared_ptr<NodeGui> node = isNodePanel->getNode();
         getGui()->getCurveEditor()->removeNode(node.get());
         getGui()->getCurveEditor()->addNode(node);
+
+        getGui()->getDopeSheetEditor()->removeNode(node.get());
+        getGui()->addNodeGuiToDopeSheetEditor(node);
     }
 }
 

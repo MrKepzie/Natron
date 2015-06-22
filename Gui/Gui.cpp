@@ -81,6 +81,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Gui/NodeGraph.h"
 #include "Gui/CurveEditor.h"
 #include "Gui/CurveWidget.h"
+#include "Gui/DopeSheet.h"
 #include "Gui/PreferencesPanel.h"
 #include "Gui/AboutWindow.h"
 #include "Gui/ProjectGui.h"
@@ -226,6 +227,8 @@ struct GuiPrivate
     mutable QMutex _pyPanelsMutex;
     std::map<PyPanel*, std::string> _userPanels;
 
+    bool _isTripleSyncEnabled;
+
 
     ///all the menu actions
     ActionWithShortcut *actionNew_project;
@@ -303,6 +306,9 @@ struct GuiPrivate
 
     ///The curve editor.
     CurveEditor *_curveEditor;
+
+    // The dope sheet
+    DopeSheetEditor *_dopeSheetEditor;
 
     ///the left toolbar
     QToolBar* _toolBox;
@@ -394,6 +400,7 @@ struct GuiPrivate
         , _splitters()
         , _pyPanelsMutex()
         , _userPanels()
+        , _isTripleSyncEnabled(false)
         , actionNew_project(0)
         , actionOpen_project(0)
         , actionClose_project(0)
@@ -512,6 +519,8 @@ struct GuiPrivate
     void createNodeGraphGui();
 
     void createCurveEditorGui();
+
+    void createDopeSheetGui();
 
     void createScriptEditorGui();
 
@@ -776,6 +785,16 @@ void
 Gui::removeNodeGuiFromCurveEditor(const boost::shared_ptr<NodeGui>& node)
 {
     _imp->_curveEditor->removeNode(node.get());
+}
+
+void Gui::addNodeGuiToDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+{
+    _imp->_dopeSheetEditor->addNode(node);
+}
+
+void Gui::removeNodeGuiFromDopeSheetEditor(const boost::shared_ptr<NodeGui> &node)
+{
+    _imp->_dopeSheetEditor->removeNode(node.get());
 }
 
 void
@@ -1117,6 +1136,7 @@ Gui::setupUi()
 
     _imp->createNodeGraphGui();
     _imp->createCurveEditorGui();
+    _imp->createDopeSheetGui();
     _imp->createScriptEditorGui();
     ///Must be absolutely called once _nodeGraphArea has been initialized.
     _imp->createPropertiesBinGui();
@@ -1382,6 +1402,15 @@ GuiPrivate::createCurveEditorGui()
 }
 
 void
+GuiPrivate::createDopeSheetGui()
+{
+    _dopeSheetEditor = new DopeSheetEditor(_gui,_appInstance->getTimeLine(), _gui);
+    _dopeSheetEditor->setScriptName(kDopeSheetEditorObjectName);
+    _dopeSheetEditor->setLabel(QObject::tr("Dope Sheet").toStdString());
+    _gui->registerTab(_dopeSheetEditor, _dopeSheetEditor);
+}
+
+void
 GuiPrivate::createScriptEditorGui()
 {
     _scriptEditor = new ScriptEditor(_gui);
@@ -1472,6 +1501,7 @@ Gui::createDefaultLayout1()
 
     TabWidget::moveTab(_imp->_nodeGraphArea, _imp->_nodeGraphArea, workshopPane);
     TabWidget::moveTab(_imp->_curveEditor, _imp->_curveEditor, workshopPane);
+    TabWidget::moveTab(_imp->_dopeSheetEditor, _imp->_dopeSheetEditor, workshopPane);
     TabWidget::moveTab(_imp->_propertiesBin, _imp->_propertiesBin, propertiesPane);
 
     {
@@ -4437,6 +4467,11 @@ Gui::getCurveEditor() const
     return _imp->_curveEditor;
 }
 
+DopeSheetEditor *Gui::getDopeSheetEditor() const
+{
+    return _imp->_dopeSheetEditor;
+}
+
 ScriptEditor*
 Gui::getScriptEditor() const
 {
@@ -5509,3 +5544,25 @@ Gui::addMenuEntry(const QString & menuGrouping,
     }
 }
 
+void Gui::setTripleSyncEnabled(bool enabled)
+{
+    if (_imp->_isTripleSyncEnabled != enabled) {
+        _imp->_isTripleSyncEnabled = enabled;
+    }
+}
+
+bool Gui::isTripleSyncEnabled() const
+{
+    return _imp->_isTripleSyncEnabled;
+}
+
+void Gui::centerOpenedViewersOn(SequenceTime left, SequenceTime right)
+{
+    const std::list<ViewerTab *> &viewers = getViewersList();
+
+    for (std::list<ViewerTab *>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+        ViewerTab *v = (*it);
+
+        v->centerOn_tripleSync(left, right);
+    }
+}

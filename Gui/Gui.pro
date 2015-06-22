@@ -8,7 +8,7 @@ TEMPLATE = lib
 CONFIG += staticlib
 CONFIG += moc rcc
 CONFIG += boost glew opengl qt cairo python shiboken pyside
-QT += gui core opengl network 
+QT += gui core opengl network
 greaterThan(QT_MAJOR_VERSION, 4): QT += concurrent
 
 
@@ -46,11 +46,11 @@ INCLUDEPATH += $$PWD/NatronGui
 DEPENDPATH += $$PWD/NatronGui
 
 win32-msvc* {
-	CONFIG(64bit) {
-		QMAKE_LFLAGS += /MACHINE:X64
-	} else {
-		QMAKE_LFLAGS += /MACHINE:X86
-	}
+        CONFIG(64bit) {
+                QMAKE_LFLAGS += /MACHINE:X64
+        } else {
+                QMAKE_LFLAGS += /MACHINE:X86
+        }
 }
 
 SOURCES += \
@@ -129,7 +129,10 @@ SOURCES += \
     NatronGui/pymodaldialog_wrapper.cpp \
     NatronGui/pypanel_wrapper.cpp \
     NatronGui/pytabwidget_wrapper.cpp \
-    NatronGui/pyviewer_wrapper.cpp
+    NatronGui/pyviewer_wrapper.cpp \
+    DopeSheet.cpp \
+    DopeSheetView.cpp \
+    DopeSheetEditorUndoRedo.cpp
 
 HEADERS += \
     AboutWindow.h \
@@ -235,7 +238,10 @@ HEADERS += \
     NatronGui/pymodaldialog_wrapper.h \
     NatronGui/pypanel_wrapper.h \
     NatronGui/pytabwidget_wrapper.h \
-    NatronGui/pyviewer_wrapper.h
+    NatronGui/pyviewer_wrapper.h \
+    DopeSheet.h \
+    DopeSheetView.h \
+    DopeSheetEditorUndoRedo.h
 
 RESOURCES += \
     GuiResources.qrc

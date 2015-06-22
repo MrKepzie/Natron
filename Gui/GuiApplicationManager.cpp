@@ -187,7 +187,7 @@ GuiApplicationManager::GuiApplicationManager()
 
 GuiApplicationManager::~GuiApplicationManager()
 {
-   
+
     delete _imp->_colorPickerCursor;
     for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
         for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
@@ -410,8 +410,8 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "color_picker.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-                
-                
+
+
             case NATRON_PIXMAP_IO_GROUPING:
                 img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/image_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
@@ -472,8 +472,8 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "GroupingIcons/Set" + iconSetStr + "/paint_grouping_" + iconSetStr + ".png");
                 *pix = QPixmap::fromImage(img);
                 break;
-                
-                
+
+
             case NATRON_PIXMAP_OPEN_EFFECTS_GROUPING:
                 img.load(NATRON_IMAGES_PATH "openeffects.png");
                 *pix = QPixmap::fromImage(img);
@@ -494,7 +494,7 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "writeImage.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-                
+
             case NATRON_PIXMAP_APP_ICON:
                 img.load(NATRON_APPLICATION_ICON_PATH);
                 *pix = QPixmap::fromImage(img);
@@ -751,7 +751,7 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "saveScript.png");
                 *pix = QPixmap::fromImage(img);
                 break;
-                
+
             case NATRON_PIXMAP_MERGE_ATOP:
                 img.load(NATRON_IMAGES_PATH "merge_atop.png");
                 *pix = QPixmap::fromImage(img);
@@ -948,6 +948,38 @@ GuiApplicationManager::getIcon(Natron::PixmapEnum e,
                 img.load(NATRON_IMAGES_PATH "rotopaint_solid.png");
                 *pix = QPixmap::fromImage(img);
                 break;
+            case NATRON_PIXMAP_INTERP_LINEAR:
+                img.load(NATRON_IMAGES_PATH "interp_linear.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CURVE:
+                img.load(NATRON_IMAGES_PATH "interp_curve.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CONSTANT:
+                img.load(NATRON_IMAGES_PATH "interp_constant.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_BREAK:
+                img.load(NATRON_IMAGES_PATH "interp_break.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CURVE_C:
+                img.load(NATRON_IMAGES_PATH "interp_curve_c.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CURVE_H:
+                img.load(NATRON_IMAGES_PATH "interp_curve_h.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CURVE_R:
+                img.load(NATRON_IMAGES_PATH "interp_curve_r.png");
+                *pix = QPixmap::fromImage(img);
+                break;
+            case NATRON_PIXMAP_INTERP_CURVE_Z:
+                img.load(NATRON_IMAGES_PATH "interp_curve_z.png");
+                *pix = QPixmap::fromImage(img);
+                break;
 
             default:
                 assert(!"Missing image.");
@@ -1068,7 +1100,7 @@ GuiApplicationManager::onPluginLoaded(Natron::Plugin* plugin)
                                                                             plugin->getMajorVersion(),
                                                                             plugin->getMinorVersion());
     for (int i = 0; i < groups.size(); ++i) {
-       
+
         shortcutGrouping.push_back('/');
         shortcutGrouping.push_back(groups[i]);
     }
@@ -1378,7 +1410,7 @@ GuiApplicationManager::loadBuiltinNodePlugins(std::map<std::string,std::vector< 
         assert(readerPlugin);
         
         registerPlugin(grouping, reader->getPluginID().c_str(), reader->getPluginLabel().c_str(), "", "", false, false, readerPlugin, false, reader->getMajorVersion(), reader->getMinorVersion());
- 
+
         std::vector<std::string> extensions = reader->supportedFileFormats();
         for (U32 k = 0; k < extensions.size(); ++k) {
             std::map<std::string,std::vector< std::pair<std::string,double> > >::iterator it;
@@ -1485,7 +1517,7 @@ Application::event(QEvent* e)
 {
     switch ( e->type() ) {
     case QEvent::FileOpen: {
-        assert(_app);   
+        assert(_app);
         QFileOpenEvent* foe = dynamic_cast<QFileOpenEvent*>(e);
         assert(foe);
         if (foe) {
@@ -2024,6 +2056,22 @@ GuiApplicationManager::populateShortcuts()
                     , Qt::NoModifier, Qt::Key_F);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorCopy, kShortcutDescActionCurveEditorCopy, Qt::ControlModifier, Qt::Key_C);
     registerKeybind(kShortcutGroupCurveEditor, kShortcutIDActionCurveEditorPaste, kShortcutDescActionCurveEditorPaste, Qt::ControlModifier, Qt::Key_V);
+
+    // Dope Sheet Editor
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorDeleteKeys, kShortcutDescActionDopeSheetEditorDeleteKeys, Qt::NoModifier, Qt::Key_Backspace);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorFrameSelection, kShortcutDescActionDopeSheetEditorFrameSelection, Qt::NoModifier, Qt::Key_F);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorSelectAllKeyframes, kShortcutDescActionDopeSheetEditorSelectAllKeyframes, Qt::ControlModifier, Qt::Key_A);
+
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorConstant, kShortcutDescActionCurveEditorConstant, Qt::NoModifier, Qt::Key_K);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorSmooth, kShortcutDescActionCurveEditorSmooth, Qt::NoModifier, Qt::Key_Z);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorLinear, kShortcutDescActionCurveEditorLinear, Qt::NoModifier, Qt::Key_L);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCatmullrom, kShortcutDescActionCurveEditorCatmullrom, Qt::NoModifier, Qt::Key_R);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorCubic, kShortcutDescActionCurveEditorCubic, Qt::NoModifier, Qt::Key_C);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorHorizontal, kShortcutDescActionCurveEditorHorizontal, Qt::NoModifier, Qt::Key_H);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionCurveEditorBreak, kShortcutDescActionCurveEditorBreak, Qt::NoModifier, Qt::Key_X);
+
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorCopySelectedKeyframes, kShortcutDescActionDopeSheetEditorCopySelectedKeyframes, Qt::ControlModifier, Qt::Key_C);
+    registerKeybind(kShortcutGroupDopeSheetEditor, kShortcutIDActionDopeSheetEditorPasteKeyframes, kShortcutDescActionDopeSheetEditorPasteKeyframes, Qt::ControlModifier, Qt::Key_V);
 } // populateShortcuts
 
 void

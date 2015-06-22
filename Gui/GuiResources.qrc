@@ -34,7 +34,7 @@
         <file>Resources/Images/GroupingIcons/Set3/channel_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/color_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/deep_grouping_3.png</file>
-        <file>Resources/Images/GroupingIcons/Set3/filter_grouping_3.png</file> 
+        <file>Resources/Images/GroupingIcons/Set3/filter_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/image_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/keyer_grouping_3.png</file>
         <file>Resources/Images/GroupingIcons/Set3/merge_grouping_3.png</file>
@@ -231,5 +231,23 @@
         <file>Resources/Images/zebra_off.png</file>
         <file>Resources/Images/zebra_on.png</file>
         <file>Resources/Stylesheets/mainstyle.qss</file>
+        <file>Resources/Images/interp_constant.png</file>
+        <file>Resources/Images/interp_linear.png</file>
+        <file>Resources/Images/interp_constant_selected.png</file>
+        <file>Resources/Images/interp_curve.png</file>
+        <file>Resources/Images/interp_curve_selected.png</file>
+        <file>Resources/Images/interp_linear_selected.png</file>
+        <file>Resources/Images/keyframe_node_root.png</file>
+        <file>Resources/Images/keyframe_node_root_selected.png</file>
+        <file>Resources/Images/interp_break.png</file>
+        <file>Resources/Images/interp_break_selected.png</file>
+        <file>Resources/Images/interp_curve_c.png</file>
+        <file>Resources/Images/interp_curve_c_selected.png</file>
+        <file>Resources/Images/interp_curve_h.png</file>
+        <file>Resources/Images/interp_curve_h_selected.png</file>
+        <file>Resources/Images/interp_curve_r.png</file>
+        <file>Resources/Images/interp_curve_r_selected.png</file>
+        <file>Resources/Images/interp_curve_z.png</file>
+        <file>Resources/Images/interp_curve_z_selected.png</file>
     </qresource>
 </RCC>
