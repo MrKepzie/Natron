@@ -220,7 +220,7 @@ public:
     void renderText(double x, double y,
                     const QString &text,
                     const QColor &color,
-                    const QFont &_font) const;
+                    const QFont &font) const;
 
     // After or during an user interaction
     void computeTimelinePositions();
