@@ -964,7 +964,11 @@ void DopeSheetViewPrivate::drawRows() const
              it != treeItemsAndDSNodes.end();
              ++it) {
             boost::shared_ptr<DSNode> dsNode = (*it).second;
-            drawNodeRowSeparation(dsNode);
+
+            bool isTreeViewTopItem = !_hierarchyView->itemAbove(dsNode->getTreeItem());
+            if (!isTreeViewTopItem) {
+                drawNodeRowSeparation(dsNode);
+            }
         }
     }
 }
