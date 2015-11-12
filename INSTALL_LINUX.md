@@ -256,8 +256,10 @@ yum -y install gcc-c++ wget libX*devel *GL*devel *xcb*devel xorg*devel libdrm-de
 
 ### Download SDK (third-party software)
 ```
-wget http://downloads.natron.fr/Third_Party_Binaries/Natron-CY2015-Linux-x86_64-SDK.tar.xz
-tar xvf Natron-CY2015-Linux-x86_64-SDK.tar.xz -C /opt/
+wget http://downloads.natron.fr/Third_Party_Binaries/Natron-2.0.0-RC3-CY2015-Linux-x86_64-SDK.tar.xz
+wget http://downloads.natron.fr/Third_Party_Binaries/Natron-2.0.0-RC3-CY2015-Linux-x86_64-SDK-update-01.tar.xz
+tar xvf Natron-2.0.0-RC3-CY2015-Linux-x86_64-SDK.tar.xz -C /opt/
+tar xvf Natron-2.0.0-RC3-CY2015-Linux-x86_64-SDK-update-01.tar.xz -C /opt/Natron-CY2015/
 ```
 
 ### Download Natron and plugins
