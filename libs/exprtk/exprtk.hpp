@@ -2,7 +2,7 @@
  ******************************************************************
  *           C++ Mathematical Expression Toolkit Library          *
  *                                                                *
- * Author:  Arash Partow (1999-2017)                              *
+ * Author: Arash Partow (1999-2017)                               *
  * URL: http://www.partow.net/programming/exprtk/index.html       *
  *                                                                *
  * Copyright notice:                                              *
@@ -409,7 +409,7 @@ namespace exprtk
 
       static const std::string cntrl_struct_list[] =
                                   {
-                                     "if", "switch", "for", "while", "repeat"
+                                     "if", "switch", "for", "while", "repeat", "return"
                                   };
 
       static const std::size_t cntrl_struct_list_size = sizeof(cntrl_struct_list) / sizeof(std::string);
@@ -4207,11 +4207,13 @@ namespace exprtk
       return std::string(view.begin(),view.size());
    }
 
+   #ifndef exprtk_disable_return_statement
    namespace details
    {
       template <typename T> class return_node;
       template <typename T> class return_envelope_node;
    }
+   #endif
 
    template <typename T>
    class results_context
@@ -4261,8 +4263,10 @@ namespace exprtk
       bool results_available_;
       ts_list_t parameter_list_;
 
+      #ifndef exprtk_disable_return_statement
       friend class details::return_node<T>;
       friend class details::return_envelope_node<T>;
+      #endif
    };
 
    namespace details
@@ -11526,6 +11530,7 @@ namespace exprtk
          }
       };
 
+      #ifndef exprtk_disable_return_statement
       template <typename T>
       class return_node : public generic_function_node<T,null_igenfunc<T> >
       {
@@ -11626,6 +11631,7 @@ namespace exprtk
          expression_ptr     body_;
          bool               body_deletable_;
       };
+      #endif
 
       #define exprtk_define_unary_op(OpName)                    \
       template <typename T>                                     \
@@ -18681,7 +18687,7 @@ namespace exprtk
             return emptyString;
          }
 
-         virtual std::vector<T>& getResolvedVector() 
+         virtual std::vector<T>& getResolvedVector()
          {
             static std::vector<T> emptyVector = std::vector<T>();
             return emptyVector;
@@ -18919,7 +18925,8 @@ namespace exprtk
             e_ctrl_switch,
             e_ctrl_for_loop,
             e_ctrl_while_loop,
-            e_ctrl_repeat_loop
+            e_ctrl_repeat_loop,
+            e_ctrl_return
          };
 
          enum settings_logic_opr
@@ -24033,6 +24040,7 @@ namespace exprtk
          return result;
       }
 
+      #ifndef exprtk_disable_return_statement
       inline expression_node_ptr parse_return_statement()
       {
          if (state_.parsing_return_stmt)
@@ -24142,6 +24150,12 @@ namespace exprtk
 
          return result;
       }
+      #else
+      inline expression_node_ptr parse_return_statement()
+      {
+         return error_node();
+      }
+      #endif
 
       inline bool post_variable_process(const std::string& symbol)
       {
@@ -24584,7 +24598,10 @@ namespace exprtk
          {
             return parse_swap_statement();
          }
-         else if (details::imatch(current_token().value,symbol_return))
+         else if (
+                   details::imatch(current_token().value,symbol_return) &&
+                   settings_.control_struct_enabled(current_token().value)
+                 )
          {
             return parse_return_statement();
          }
@@ -26584,6 +26601,7 @@ namespace exprtk
          }
          #endif
 
+         #ifndef exprtk_disable_return_statement
          inline expression_node_ptr return_call(std::vector<expression_node_ptr>& arg_list)
          {
             if (!all_nodes_valid(arg_list))
@@ -26627,6 +26645,19 @@ namespace exprtk
 
             return result;
          }
+         #else
+         inline expression_node_ptr return_call(std::vector<expression_node_ptr>&)
+         {
+            return error_node();
+         }
+
+         inline expression_node_ptr return_envelope(expression_node_ptr,
+                                                    results_context_t*,
+                                                    bool*&)
+         {
+            return error_node();
+         }
+         #endif
 
          inline expression_node_ptr vector_element(const std::string& symbol,
                                                    vector_holder_ptr vector_base,
@@ -33580,6 +33611,7 @@ namespace exprtk
 
       inline void return_cleanup()
       {
+         #ifndef exprtk_disable_return_statement
          if (results_context_)
          {
             delete results_context_;
@@ -33587,6 +33619,7 @@ namespace exprtk
          }
 
          state_.return_stmt_present = false;
+         #endif
       }
 
    private:
@@ -36681,7 +36714,7 @@ namespace exprtk
          vector_t vec(parameters[0]);
 
          T increment = scalar_t(parameters[1])();
-         T base      = ((1 == ps_index) || (3 == ps_index))? scalar_t(parameters[2])() : T(0);
+         T base      = ((1 == ps_index) || (3 == ps_index)) ? scalar_t(parameters[2])() : T(0);
 
          std::size_t r0 = 0;
          std::size_t r1 = vec.size() - 1;
@@ -37159,9 +37192,9 @@ namespace exprtk
    namespace information
    {
       static const char* library = "Mathematical Expression Toolkit";
-      static const char* version = "2.718281828459045235360287471352662497757247"
-                                   "09369995957496696762772407663035354759457138";
-      static const char* date    = "20170107";
+      static const char* version = "2.71828182845904523536028747135266249775724709"
+                                   "3699959574966967627724076630353547594571382178";
+      static const char* date    = "20170404";
 
       static inline std::string data()
       {
