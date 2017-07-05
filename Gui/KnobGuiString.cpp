@@ -420,11 +420,12 @@ KnobGuiString::KnobGuiString(const KnobGuiPtr& knob, ViewIdx view)
 QFont
 KnobGuiString::makeFontFromState() const
 {
+    QFont f; //modefy by lihaiping1603@aliyun.com
     KnobStringPtr knob = _knob.lock();
     if (!knob) {
-        return;
+        return f;
     }
-    QFont f;
+//    QFont f;
     f.setFamily(QString::fromUtf8(knob->getFontFamily().c_str()));
     f.setPointSize(knob->getFontSize());
     f.setBold(knob->getBoldActivated());
