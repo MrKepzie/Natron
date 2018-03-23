@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/bind.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/scoped_ptr.hpp>
+#include <boost/make_shared.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
@@ -117,7 +118,7 @@ EffectInstance::EffectInstance(const EffectInstancePtr& other, const FrameViewRe
 
     {
         QMutexLocker k(&_imp->common->pluginsPropMutex);
-        _imp->descriptionPtr.reset(new EffectDescription);
+        _imp->descriptionPtr = boost::make_shared<EffectDescription>();
         _imp->descriptionPtr->cloneProperties(*_imp->common->descriptor);
     }
 }
@@ -298,7 +299,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     // If we used getFramesNeeded, cache it now if possible
     if (framesNeededResults) {
         GetFramesNeededKeyPtr cacheKey;
-        cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
+        cacheKey = boost::make_shared<GetFramesNeededKey>(hashValue, getNode()->getPluginID() );
 
 
         CacheEntryLockerBasePtr cacheAccess = appPTR->getGeneralPurposeCache()->get(framesNeededResults);
@@ -853,7 +854,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             status = subLaunchData->getStatus();
         } else {
             // We are not during a render, create one.
-            TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
+            TreeRender::CtorArgsPtr rargs = boost::make_shared<TreeRender::CtorArgs>();
             rargs->provider = getThisTreeRenderQueueProviderShared();
             rargs->time = inputTime;
             rargs->view = inputView;
@@ -1260,7 +1261,7 @@ EffectInstance::createMemoryChunk(size_t nBytes)
 PluginMemoryPtr
 EffectInstance::createPluginMemory()
 {
-    PluginMemoryPtr ret( new PluginMemory() );
+    PluginMemoryPtr ret = boost::make_shared<PluginMemory>();
     return ret;
 }
 

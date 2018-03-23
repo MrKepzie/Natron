@@ -252,33 +252,30 @@ Gui::onMaxPanelsSpinBoxValueChanged(double val)
 void
 Gui::clearAllVisiblePanels()
 {
-    std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
-    bool foundNonFloating = true;
-    while ( !panels.empty() && foundNonFloating) {
-        std::list<DockablePanelI*>::iterator it = panels.begin();
-        DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
-        if (isPanel) {
-            if ( !isPanel->isFloating() ) {
-                isPanel->setClosed(true);
-            }
-        }
+  std::list<DockablePanelI*> panels = getApp()->getOpenedSettingsPanels();
+    // close panels one by one, since closing a panel updates the openedPanels list.
+    while ( !panels.empty() ) {
+        bool foundNonFloating = false;
 
-        foundNonFloating = false;
-        panels = getApp()->getOpenedSettingsPanels();
-        for (std::list<DockablePanelI*>::iterator it2 = panels.begin(); it2 != panels.end(); ++it2) {
-            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it2);
+        // close one panel at a time - this changes the openedPanel list, so we must break the loop
+        for (std::list<DockablePanelI*>::iterator it = panels.begin(); it != panels.end(); ++it) {
+            DockablePanel* isPanel = dynamic_cast<DockablePanel*>(*it);
             if (!isPanel) {
                 continue;
             }
             if ( !isPanel->isFloating() ) {
+                isPanel->setClosed(true);
                 foundNonFloating = true;
                 break;
             }
         }
-        ///only floating windows left
+
+        // no panel was closed
         if (!foundNonFloating) {
             break;
         }
+        // prepare for next iteration, update the panels list
+        panels = getApp()->getOpenedSettingsPanels();
     }
     getApp()->redrawAllViewers();
 }

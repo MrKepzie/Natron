@@ -25,8 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/make_shared.hpp>
+#endif
+
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/OpenGLViewerI.h"
+
 
 NATRON_NAMESPACE_ENTER
 
@@ -116,22 +121,16 @@ typedef boost::shared_ptr<ViewerRenderFrameResultsContainer> ViewerRenderFrameRe
 class ViewerDisplayScheduler
 : public OutputSchedulerThread
 {
+    struct MakeSharedEnabler;
 
 protected:
-
-
-
+    // used by boost::make_shared<>
     ViewerDisplayScheduler(const RenderEnginePtr& engine,
                            const NodePtr& viewer);
 
-
 public:
-
     static OutputSchedulerThreadPtr create(const RenderEnginePtr& engine,
-                                           const NodePtr& viewer)
-    {
-        return OutputSchedulerThreadPtr(new ViewerDisplayScheduler(engine, viewer));
-    }
+                                           const NodePtr& viewer);
 
 
     virtual ~ViewerDisplayScheduler();

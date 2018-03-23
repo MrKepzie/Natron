@@ -95,6 +95,7 @@ struct StatRowsCompare
         }
     }
 };
+
 class StatsTableModel;
 typedef boost::shared_ptr<StatsTableModel> StatsTableModelPtr;
 
@@ -103,9 +104,9 @@ class StatsTableModel
 {
     Q_DECLARE_TR_FUNCTIONS(StatsTableModel)
 
-private:
-
     std::vector<NodeWPtr > rows;
+
+    struct MakeSharedEnabler;
 
     StatsTableModel(int cols)
     : TableModel(cols, eTableModelTypeTable)
@@ -113,14 +114,8 @@ private:
     {
     }
 
-
 public:
-
-    static StatsTableModelPtr create(int cols)
-    {
-        return StatsTableModelPtr(new StatsTableModel(cols));
-    }
-
+    static StatsTableModelPtr create(int cols);
 
     virtual ~StatsTableModel() {}
 
@@ -258,6 +253,22 @@ public:
         Q_EMIT layoutChanged();
     }
 };
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct StatsTableModel::MakeSharedEnabler: public StatsTableModel
+{
+    MakeSharedEnabler(int cols) : StatsTableModel(cols) {
+    }
+};
+
+
+StatsTableModelPtr
+StatsTableModel::create(int cols)
+{
+    return boost::make_shared<StatsTableModel::MakeSharedEnabler>(cols);
+}
 
 struct RenderStatsDialogPrivate
 {

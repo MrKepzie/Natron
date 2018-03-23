@@ -32,6 +32,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 
@@ -62,6 +63,8 @@ class TableItem : public boost::enable_shared_from_this<TableItem>
     friend class TableModel;
     friend class TableView;
     friend struct TableItemPrivate;
+
+    struct MakeSharedEnabler;
 
     TableItem(const TableModelPtr& model);
 
@@ -445,9 +448,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     friend class TableItem;
     friend class TableView;
 
+    struct MakeSharedEnabler;
+
 public:
-
-
     enum TableModelTypeEnum
     {
         // Each row is a top-level item
@@ -458,16 +461,11 @@ public:
     };
 
 protected:
-    
+    // used by boost::make_shared
     TableModel(int cols, TableModelTypeEnum type);
 
 public:
-
-   
-    static TableModelPtr create(int columns, TableModelTypeEnum type)
-    {
-        return TableModelPtr(new TableModel(columns, type));
-    }
+    static TableModelPtr create(int columns, TableModelTypeEnum type);
 
     virtual ~TableModel();
     

@@ -1204,7 +1204,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
 
 
                         // Make a temporary texture, fill it with black and copy the origin texture into it before uploading the image
-                        GLTexturePtr tmpTex(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+                        GLTexturePtr tmpTex = boost::make_shared<Texture>(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true);
                         tmpTex->ensureTextureHasSize(unionedBounds, 0);
 
                         saveOpenGLContext();
@@ -2685,6 +2685,18 @@ ViewerGL::getPixelScale(double & xScale,
     yScale = _imp->zoomCtx.screenPixelHeight();
 }
 
+#ifdef OFX_EXTENSIONS_NATRON
+double
+ViewerGL::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
+
 /**
  * @brief Returns the colour of the background (i.e: clear color) of the viewport.
  **/
@@ -3599,6 +3611,13 @@ void
 ViewerGL::setTimelineBounds(double first, double last)
 {
     getViewerTab()->setTimelineBounds(first, last);
+}
+
+void
+ViewerGL::setTimelineFormatFrames(bool value)
+{
+    getViewerTab()->setTimelineFormatFrames(value);
+
 }
 
 void

@@ -408,6 +408,12 @@ AppManager::getPhysicalThreadCount()
     return _imp->physicalThreadCount;
 }
 
+int
+AppManager::getMaxThreadCount()
+{
+    return QThreadPool::globalInstance()->maxThreadCount();
+}
+
 AppManager::AppManager()
     : QObject()
     , _imp( new AppManagerPrivate() )
@@ -552,6 +558,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
+    // scoped_ptr
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
 
@@ -759,7 +766,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
@@ -767,7 +774,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
 void
 AppManager::quit(const AppInstancePtr& instance)
 {
-    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    boost::shared_ptr<QuitInstanceArgs> args = boost::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
@@ -1184,10 +1191,7 @@ AppManager::initGui(const CLArgs& cl)
 bool
 AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
-
-
     setLoadingStatus( tr("Loading Plug-in Cache...") );
-
 
     ///Set host properties after restoring settings since it depends on the host name.
     try {
@@ -1696,6 +1700,7 @@ AppManager::loadBuiltinNodePlugins()
     ADD_PLUGIN_SAFE(DiskCacheNode);
     ADD_PLUGIN_SAFE(RotoPaint);
     ADD_PLUGIN_SAFE(RotoNode);
+    ADD_PLUGIN_SAFE(LayeredCompNode);
     ADD_PLUGIN_SAFE(RotoShapeRenderNode);
     ADD_PLUGIN_SAFE(PrecompNode);
     ADD_PLUGIN_SAFE(TrackerNode);
@@ -3731,6 +3736,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* dict = PyModule_GetDict(mainModule);
 
+    PyErr_Clear();
+
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
     if (v) {
@@ -3766,7 +3773,12 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                 Py_DECREF(module_name);
 
                 if (pyth_module != NULL) {
-                    PyObject* pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+                    PyObject* pyth_func;
+                    if (!pyExcTraceback) {
+                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception_only");
+                    } else {
+                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+                    }
                     Py_DECREF(pyth_module);
                     if (pyth_func && PyCallable_Check(pyth_func)) {
                         PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
@@ -3779,10 +3791,10 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                             Py_DECREF(strList);
                             if (pyStr) {
                                 str = PyString_AsString(pyStr);
-                                Py_DECREF(pyStr);
                                 if (error && str) {
                                     *error += std::string(str) + '\n';
                                 }
+                                Py_DECREF(pyStr);
                             }
                         }
                     }
@@ -3792,7 +3804,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     }
 
     if (error) {
-        *error = NATRON_PYTHON_NAMESPACE::getPythonStdErr();
+        *error += NATRON_PYTHON_NAMESPACE::getPythonStdErr();
     }
     if (output) {
         *output = NATRON_PYTHON_NAMESPACE::getPythonStdOut();

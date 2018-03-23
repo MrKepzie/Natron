@@ -58,21 +58,16 @@ class AnimationModule
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    struct MakeSharedEnabler;
 
     AnimationModule(Gui *gui,
                     AnimationModuleEditor* editor,
                     const TimeLinePtr &timeline);
 
 public:
-
     static AnimationModulePtr create(Gui *gui,
                                      AnimationModuleEditor* editor,
-                                     const TimeLinePtr &timeline)
-    {
-        AnimationModulePtr ret(new AnimationModule(gui, editor, timeline));
-        ret->ensureSelectionModel();
-        return ret;
-    }
+                                     const TimeLinePtr &timeline);
 
     virtual ~AnimationModule();
 

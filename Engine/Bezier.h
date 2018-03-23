@@ -34,6 +34,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 CLANG_DIAG_OFF(deprecated-declarations)
@@ -82,17 +83,18 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
+    struct MakeSharedEnabler;
 
+public:
     Bezier(const KnobItemsTablePtr& model,
            const std::string& baseName,
            bool isOpenBezier);
 
 private:
-
-    
+    // used by boost::make_shared
     Bezier(const BezierPtr& other, const FrameViewRenderKey& key);
 
+private:
     virtual KnobHolderPtr createRenderCopy(const FrameViewRenderKey& render) const OVERRIDE FINAL;
 
     virtual bool isRenderCloneNeeded() const OVERRIDE FINAL

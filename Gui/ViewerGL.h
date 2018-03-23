@@ -268,6 +268,8 @@ public:
 
     virtual void setTimelineBounds(double first, double last) OVERRIDE FINAL;
 
+    virtual void setTimelineFormatFrames(bool value) OVERRIDE FINAL;
+
     virtual void setTripleSyncEnabled(bool toggled) OVERRIDE FINAL;
 
     /**
@@ -296,6 +298,10 @@ public:
      * @brief Returns the pixel scale of the viewport.
      **/
     virtual void getPixelScale(double & xScale, double & yScale) const OVERRIDE FINAL;
+
+#ifdef OFX_EXTENSIONS_NATRON
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL;
+#endif
 
     /**
      * @brief Returns the colour of the background (i.e: clear color) of the viewport.

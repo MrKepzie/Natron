@@ -91,7 +91,7 @@ git submodule update -i --recursive
 ### Download OpenColorIO-Configs
 
 In the past, OCIO configs were a submodule, though due to the size of the repository, we have chosen instead
-to make a tarball release and let you download it [here](https://github.com/MrKepzie/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
+to make a tarball release and let you download it [here](https://github.com/NatronGitHub/OpenColorIO-Configs/archive/Natron-v2.1.tar.gz).
 Place it at the root of Natron repository.
 
 ***note:*** *If it is name something like: `OpenColorIO-Configs-Natron-v2.0` rename it to `OpenColorIO-Configs`*
@@ -120,7 +120,7 @@ boost: LIBS += -lboost_thread -lboost_system
 expat: LIBS += -lexpat
 expat: PKGCONFIG -= expat
 cairo: PKGCONFIG -= cairo
-PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig
+pyside: PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
 pyside: PKGCONFIG += pyside
 pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
 pyside: INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
@@ -135,8 +135,8 @@ is lower than version 1.12 (as it is on Ubuntu 12.04 LTS for example).*
 
 Natron's nodes are contained in separate repositories. To use the default nodes, you must also build the following repositories:
 
-    https://github.com/devernay/openfx-misc
-    https://github.com/MrKepzie/openfx-io
+    https://github.com/NatronGitHub/openfx-misc
+    https://github.com/NatronGitHub/openfx-io
 
 
 You'll find installation instructions in the README of both these repositories. Both openfx-misc and openfx-io have submodules as well.
@@ -203,12 +203,10 @@ cairo {
         LIBS += /usr/local/lib/libcairo.a
 }
 pyside {
-        PKGCONFIG -= pyside
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtCore
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside-py2)/QtGui
-        INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-        LIBS += -lpyside-python2.7
+        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+        PKGCONFIG += pyside
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 }
 shiboken {
         PKGCONFIG -= shiboken
@@ -272,12 +270,10 @@ cairo {
         LIBS -=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
 }
 pyside {
-        PKGCONFIG -= pyside
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtCore
-        INCLUDEPATH += $$system(pkg-config --variable=includedir pyside)/QtGui
-        INCLUDEPATH += $$system(pkg-config --variable=includedir QtGui)
-        LIBS += -lpyside-python2.7
+        PYSIDE_PKG_CONFIG_PATH = $$system($$PYTHON_CONFIG --prefix)/lib/pkgconfig:$$(PKG_CONFIG_PATH)
+        PKGCONFIG += pyside
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtCore
+        INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$PYSIDE_PKG_CONFIG_PATH pkg-config --variable=includedir pyside)/QtGui
 }
 shiboken {
         PKGCONFIG -= shiboken
