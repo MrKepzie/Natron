@@ -32,7 +32,7 @@
 
 #include <QThread>
 
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
 #include <QtWidgets/QApplication> // qApp
@@ -1204,7 +1204,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const TextureTransferArgs& args)
 
 
                         // Make a temporary texture, fill it with black and copy the origin texture into it before uploading the image
-                        GLTexturePtr tmpTex(new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+                        GLTexturePtr tmpTex = boost::make_shared<Texture>(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true);
                         tmpTex->ensureTextureHasSize(unionedBounds, 0);
 
                         saveOpenGLContext();
@@ -1315,7 +1315,7 @@ ViewerGL::disconnectInputTexture(int textureIndex, bool clearRoD)
     }
 }
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #define QMouseEventLocalPos(e) ( e->posF() )
 #else
 #define QMouseEventLocalPos(e) ( e->localPos() )
@@ -2159,11 +2159,15 @@ ViewerGL::fitImageToFormat()
     // size in Canonical = Zoom coordinates !
     double w, h;
     const RectD& tex0Format = _imp->displayTextures[0].format;
-    assert(!tex0Format.isNull());
+    if (tex0Format.isNull()) {
+        return;
+    }
     w = tex0Format.width();
     h = tex0Format.height();
 
-    assert(h > 0. && w > 0.);
+    if (w <= 0 || h <= 0) {
+        return;
+    }
 
     double old_zoomFactor;
     double zoomFactor;
@@ -2684,6 +2688,18 @@ ViewerGL::getPixelScale(double & xScale,
     xScale = _imp->zoomCtx.screenPixelWidth();
     yScale = _imp->zoomCtx.screenPixelHeight();
 }
+
+#ifdef OFX_EXTENSIONS_NATRON
+double
+ViewerGL::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
 
 /**
  * @brief Returns the colour of the background (i.e: clear color) of the viewport.
@@ -3535,7 +3551,7 @@ ViewerGL::getViewerFrameRange(int* first,
 double
 ViewerGL::currentTimeForEvent(QInputEvent* e)
 {
-#if QT_VERSION >= 0x050000
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     // timestamp() is usually in milliseconds
     if ( e->timestamp() ) {
         return (double)e->timestamp() / 1000000;
@@ -3599,6 +3615,13 @@ void
 ViewerGL::setTimelineBounds(double first, double last)
 {
     getViewerTab()->setTimelineBounds(first, last);
+}
+
+void
+ViewerGL::setTimelineFormatFrames(bool value)
+{
+    getViewerTab()->setTimelineFormatFrames(value);
+
 }
 
 void

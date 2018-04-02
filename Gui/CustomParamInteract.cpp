@@ -26,6 +26,7 @@
 
 #include <stdexcept>
 
+#include <QtCore/QSize>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 #include <QMouseEvent>
@@ -208,6 +209,18 @@ CustomParamInteract::getPixelScale(double & xScale,
     xScale = 1.;
     yScale = 1.;
 }
+
+#ifdef OFX_EXTENSIONS_NATRON
+double
+CustomParamInteract::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
 
 void
 CustomParamInteract::getBackgroundColour(double &r,

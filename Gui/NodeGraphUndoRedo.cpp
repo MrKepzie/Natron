@@ -154,7 +154,7 @@ AddMultipleNodesCommand::undo()
         if (!node) {
             continue;
         }
-        it->serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->serialization = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
         it->serialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
         node->toSerialization(it->serialization.get());
         if (_nodes.size() == 1) {
@@ -214,14 +214,14 @@ AddMultipleNodesCommand::redo()
 }
 
 RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,
-                                                       const std::list<NodeGuiPtr > & nodes,
+                                                       const std::list<NodeGuiPtr> & nodes,
                                                        QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
     , _graph(graph)
     , _isRedone(false)
 {
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeToRemove n;
         n.node = (*it)->getNode();
         _nodes.push_back(n);
@@ -277,7 +277,7 @@ RemoveMultipleNodesCommand::redo()
         if (!node) {
             continue;
         }
-        it->serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->serialization = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
         it->serialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
         node->toSerialization(it->serialization.get());
         if (_nodes.size() == 1) {
@@ -503,7 +503,7 @@ InsertNodeCommand::redo()
 
     ///find out if the node is already connected to what the edge is connected
     bool alreadyConnected = false;
-    const std::vector<NodeWPtr > & inpNodes = newSrcInternal->getInputs();
+    const std::vector<NodeWPtr> & inpNodes = newSrcInternal->getInputs();
     if (oldSrcInternal) {
         for (std::size_t i = 0; i < inpNodes.size(); ++i) {
             if (inpNodes[i].lock() == oldSrcInternal) {
@@ -696,7 +696,8 @@ private:
                            NodeGui* currentNode, const QPointF & currentNodeScenePos, std::list<NodeGui*> & usedNodes);
 };
 
-typedef std::list< boost::shared_ptr<Tree> > TreeList;
+typedef boost::shared_ptr<Tree> TreePtr;
+typedef std::list<TreePtr> TreePtrList;
 
 void
 Tree::buildTreeInternal(const NodesGuiList& selectedNodes,
@@ -838,12 +839,12 @@ Tree::buildTreeInternal(const NodesGuiList& selectedNodes,
 } // buildTreeInternal
 
 static bool
-hasNodeOutputsInList(const std::list<NodeGuiPtr >& nodes,
+hasNodeOutputsInList(const std::list<NodeGuiPtr>& nodes,
                      const NodeGuiPtr& node)
 {
     OutputNodesMap outputs;
     node->getNode()->getOutputs(outputs);
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if (*it != node) {
             NodePtr n = (*it)->getNode();
             OutputNodesMap::const_iterator foundOutput = outputs.find(n);
@@ -860,7 +861,7 @@ hasNodeOutputsInList(const std::list<NodeGuiPtr >& nodes,
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
-RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & nodes,
+RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                              QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
@@ -881,11 +882,11 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & node
     ///Each tree is a lit of nodes with a boolean indicating if it was already positionned( "used" ) by another tree, if set to
     ///true we don't do anything
     /// Each node that doesn't have any output is a potential tree.
-    TreeList trees;
+    TreePtrList trees;
 
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( !hasNodeOutputsInList( nodes, (*it) ) ) {
-            boost::shared_ptr<Tree> newTree(new Tree);
+            TreePtr newTree = boost::make_shared<Tree>();
             newTree->buildTree(*it, nodes, usedNodes);
             trees.push_back(newTree);
         }
@@ -893,7 +894,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & node
 
     ///For all trees find out which one has the top most level node
     QPointF topLevelPos(0, INT_MAX);
-    for (TreeList::iterator it = trees.begin(); it != trees.end(); ++it) {
+    for (TreePtrList::iterator it = trees.begin(); it != trees.end(); ++it) {
         const QPointF & treeTop = (*it)->getTopLevelNodeCenter();
         if ( treeTop.y() < topLevelPos.y() ) {
             topLevelPos = treeTop;
@@ -901,7 +902,7 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & node
     }
 
     ///now offset all trees to be top aligned at the same level
-    for (TreeList::iterator it = trees.begin(); it != trees.end(); ++it) {
+    for (TreePtrList::iterator it = trees.begin(); it != trees.end(); ++it) {
         QPointF treeTop = (*it)->getTopLevelNodeCenter();
         if (treeTop.y() == INT_MAX) {
             treeTop.setY( topLevelPos.y() );
@@ -950,12 +951,12 @@ RearrangeNodesCommand::redo()
     setText( tr("Rearrange nodes") );
 }
 
-DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr > & nodes,
+DisableNodesCommand::DisableNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                          QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
 {
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr>::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
 }
@@ -978,12 +979,12 @@ DisableNodesCommand::redo()
     setText( tr("Disable nodes") );
 }
 
-EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr > & nodes,
+EnableNodesCommand::EnableNodesCommand(const std::list<NodeGuiPtr> & nodes,
                                        QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
 {
-    for (std::list<NodeGuiPtr > ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (std::list<NodeGuiPtr> ::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
 }
@@ -1354,6 +1355,10 @@ GroupFromSelectionCommand::redo()
             if (!*it2 || (*it2)->isPartOfGivenNodes) {
                 continue;
             }
+            // only create input if input is enabled/visible
+            if ( !(*it)->node->isInputVisible(i) ) {
+                continue;
+            }
             NodePtr originalInput = (*it2)->node;
             if (!originalInput) {
                 continue;
@@ -1721,7 +1726,7 @@ InlineGroupCommand::redo()
         }
 
         // Deactivate the group node
-        it->groupNodeSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        it->groupNodeSerialization = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
         it->groupNodeSerialization->_encodeFlags = SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationFlagsSerializeOutputs;
         group->getNode()->toSerialization(it->groupNodeSerialization.get());
         group->getNode()->connectOutputsToMainInput();
@@ -1744,7 +1749,7 @@ RestoreNodeToDefaultCommand::RestoreNodeToDefaultCommand(const NodesGuiList & no
     for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         NodeDefaults d;
         d.node = *it;
-        d.serialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
+        d.serialization = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
         (*it)->getNode()->toSerialization(d.serialization.get());
         _nodes.push_back(d);
     }

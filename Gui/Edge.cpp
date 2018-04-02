@@ -28,6 +28,7 @@
 #include <cmath>
 #include <stdexcept>
 
+#include <QtCore/QSize>
 #include <QPainter>
 #include <QApplication>
 #include <QGraphicsScene>
@@ -70,12 +71,13 @@ struct EdgePrivate
     double angle;
     NodeGraphSimpleTextItem* label;
     QPolygonF arrowHead;
-    boost::weak_ptr<NodeGui> dest;
-    boost::weak_ptr<NodeGui> source;
+    NodeGuiWPtr dest;
+    NodeGuiWPtr source;
     QColor defaultColor;
     QColor renderingColor;
     bool useRenderingColor;
     bool useHighlight;
+    bool useSelected;
     bool paintWithDash;
     bool optional;
     bool paintBendPoint;
@@ -100,6 +102,7 @@ struct EdgePrivate
         , renderingColor(243, 149, 0)
         , useRenderingColor(false)
         , useHighlight(false)
+        , useSelected(false)
         , paintWithDash(false)
         , optional(false)
         , paintBendPoint(false)
@@ -381,6 +384,13 @@ Edge::setUseHighlight(bool highlight)
     update();
 }
 
+void
+Edge::setUseSelected(bool val)
+{
+    _imp->useSelected = val;
+    update();
+}
+
 static void
 makeEdges(const QRectF & bbox,
           std::vector<QLineF> & edges)
@@ -506,7 +516,9 @@ Edge::initLine()
 
 
             if (_imp->label) {
-                _imp->label->setPos( _imp->middlePoint + QPointF(-5, -10) );
+                QPointF pos( _imp->middlePoint + QPointF(-5, -10) );
+                //qDebug() << pos;
+                _imp->label->setPos(pos);
                 QFontMetrics fm( _imp->label->font() );
                 int fontHeight = fm.height();
                 double txtWidth = fm.width( _imp->label->text() );
@@ -677,7 +689,9 @@ Edge::dragSource(const QPointF & src)
 
 
     if (_imp->label) {
-        _imp->label->setPos( QPointF( ( ( line().p1().x() + src.x() ) / 2. ) - 5, ( ( line().p1().y() + src.y() ) / 2. ) - 5 ) );
+        QPointF pos( ( ( line().p1().x() + src.x() ) / 2. ) - 5, ( ( line().p1().y() + src.y() ) / 2. ) - 5 );
+        //qDebug() << pos;
+        _imp->label->setPos(pos);
     }
 }
 
@@ -752,7 +766,9 @@ Edge::paint(QPainter *painter,
     }
 
     QColor color, arrowColor;
-    if (_imp->useHighlight) {
+    if (_imp->useSelected) {
+        color = arrowColor = Qt::white;
+    } else if (_imp->useHighlight) {
         color = arrowColor = Qt::green;
     } else if (_imp->useRenderingColor) {
         color = arrowColor = _imp->renderingColor;

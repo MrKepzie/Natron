@@ -42,6 +42,8 @@
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
 
+#include <QtCore/QSize>
+
 NATRON_NAMESPACE_ENTER
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
@@ -240,6 +242,8 @@ public:
     void onMousePressCalledInViewer();
 
     void setTimelineBounds(double first, double last);
+
+    void setTimelineFormatFrames(bool value);
 
 
     /**

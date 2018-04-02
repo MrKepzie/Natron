@@ -45,7 +45,7 @@ CreateNodeArgs::~CreateNodeArgs()
 CreateNodeArgsPtr
 CreateNodeArgs::create(const std::string& pluginID, const NodeCollectionPtr& group)
 {
-    CreateNodeArgsPtr ret(new CreateNodeArgs);
+    CreateNodeArgsPtr ret = boost::make_shared<CreateNodeArgs>();
     ret->setProperty(kCreateNodeArgsPropPluginID, pluginID);
     if (group) {
         ret->setProperty(kCreateNodeArgsPropGroupContainer, group);
@@ -63,7 +63,7 @@ CreateNodeArgs::initializeProperties() const
     createProperty<std::string>(kCreateNodeArgsPropPreset, std::string());
     createProperty<std::string>(kCreateNodeArgsPropPyPlugID, std::string());
     createProperty<std::string>(kCreateNodeArgsPropNodeInitialParamValues, std::vector<std::string>());
-    createProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, SERIALIZATION_NAMESPACE::NodeSerializationPtr());
+    createProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, SERIALIZATION_NAMESPACE::NodeSerializationPtr());
     createProperty<bool>(kCreateNodeArgsPropVolatile, false);
     createProperty<bool>(kCreateNodeArgsPropNoNodeGUI, false);
     createProperty<bool>(kCreateNodeArgsPropSettingsOpened, true);
@@ -73,7 +73,7 @@ CreateNodeArgs::initializeProperties() const
     createProperty<bool>(kCreateNodeArgsPropSilent, false);
     createProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes, false);
     createProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, true);
-    createProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer, NodeCollectionPtr());
+    createProperty<NodeCollectionPtr>(kCreateNodeArgsPropGroupContainer, NodeCollectionPtr());
     createProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer, NodePtr());
 }
 

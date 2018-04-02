@@ -39,7 +39,7 @@
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerHelper.h"
 
-#ifdef CERES_USE_OPENMP
+#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
 #include <omp.h>
 #endif
 
@@ -392,7 +392,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
 {
     assert( trackIndex >= 0 && trackIndex < args.getNumTracks() );
 
-    const std::vector<TrackMarkerAndOptionsPtr >& tracks = args.getTracks();
+    const std::vector<TrackMarkerAndOptionsPtr>& tracks = args.getTracks();
     const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];
     boost::shared_ptr<mv::AutoTrack> autoTrack = args.getLibMVAutoTrack();
     QMutex* autoTrackMutex = args.getAutoTrackMutex();
@@ -442,7 +442,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
 #endif
 
 
-#ifdef CERES_USE_OPENMP
+#if defined(CERES_USE_OPENMP) && defined(_OPENMP)
         // Set the number of threads Ceres may use
         QThreadPool* tp = QThreadPool::globalInstance();
 

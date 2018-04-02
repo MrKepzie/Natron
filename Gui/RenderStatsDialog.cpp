@@ -95,6 +95,7 @@ struct StatRowsCompare
         }
     }
 };
+
 class StatsTableModel;
 typedef boost::shared_ptr<StatsTableModel> StatsTableModelPtr;
 
@@ -103,9 +104,9 @@ class StatsTableModel
 {
     Q_DECLARE_TR_FUNCTIONS(StatsTableModel)
 
-private:
+    std::vector<NodeWPtr> rows;
 
-    std::vector<NodeWPtr > rows;
+    struct MakeSharedEnabler;
 
     StatsTableModel(int cols)
     : TableModel(cols, eTableModelTypeTable)
@@ -113,14 +114,8 @@ private:
     {
     }
 
-
 public:
-
-    static StatsTableModelPtr create(int cols)
-    {
-        return StatsTableModelPtr(new StatsTableModel(cols));
-    }
-
+    static StatsTableModelPtr create(int cols);
 
     virtual ~StatsTableModel() {}
 
@@ -130,7 +125,7 @@ public:
         rows.clear();
     }
 
-    const std::vector<NodeWPtr >& getRows() const
+    const std::vector<NodeWPtr>& getRows() const
     {
         return rows;
     }
@@ -258,6 +253,22 @@ public:
         Q_EMIT layoutChanged();
     }
 };
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct StatsTableModel::MakeSharedEnabler: public StatsTableModel
+{
+    MakeSharedEnabler(int cols) : StatsTableModel(cols) {
+    }
+};
+
+
+StatsTableModelPtr
+StatsTableModel::create(int cols)
+{
+    return boost::make_shared<StatsTableModel::MakeSharedEnabler>(cols);
+}
 
 struct RenderStatsDialogPrivate
 {
@@ -440,7 +451,7 @@ RenderStatsDialog::RenderStatsDialog(Gui* gui)
     _imp->view->setSelectionBehavior(QAbstractItemView::SelectRows);
 
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     _imp->view->header()->setResizeMode(QHeaderView::ResizeToContents);
 #else
     _imp->view->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
@@ -470,7 +481,7 @@ RenderStatsDialog::onKnobsTreeSelectionChanged(const QItemSelection &selected,
         return;
     }
     int idx = indexes[0].row();
-    const std::vector<NodeWPtr >& rows = _imp->model->getRows();
+    const std::vector<NodeWPtr>& rows = _imp->model->getRows();
     if ( (idx < 0) || ( idx >= (int)rows.size() ) ) {
         return;
     }
@@ -528,7 +539,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
                                                     const QString& pluginIDFilter)
 {
     QModelIndex rootIdx = view->rootIndex();
-    const std::vector<NodeWPtr >& rows = model->getRows();
+    const std::vector<NodeWPtr>& rows = model->getRows();
 
 
     if ( useUnixWildcardsCheckbox->isChecked() ) {
@@ -544,7 +555,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
 
 
         int i = 0;
-        for (std::vector<NodeWPtr >::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
+        for (std::vector<NodeWPtr>::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
             NodePtr node = it->lock();
             if (!node) {
                 continue;
@@ -564,7 +575,7 @@ RenderStatsDialogPrivate::updateVisibleRowsInternal(const QString& nameFilter,
     } else {
         int i = 0;
 
-        for (std::vector<NodeWPtr >::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
+        for (std::vector<NodeWPtr>::const_iterator it = rows.begin(); it != rows.end(); ++it, ++i) {
             NodePtr node = it->lock();
             if (!node) {
                 continue;

@@ -40,21 +40,15 @@ class NodeAnim : public QObject,  public boost::enable_shared_from_this<NodeAnim
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    struct MakeSharedEnabler;
 
     NodeAnim(const AnimationModulePtr& model,
              const NodeGuiPtr &nodeGui);
 
 public:
-
     static NodeAnimPtr create(const AnimationModulePtr& model,
                               AnimatedItemTypeEnum itemType,
-                              const NodeGuiPtr &nodeGui)
-    {
-        NodeAnimPtr ret(new NodeAnim(model, nodeGui));
-        ret->initialize(itemType);
-        return ret;
-    }
-
+                              const NodeGuiPtr &nodeGui);
 
     virtual ~NodeAnim();
 

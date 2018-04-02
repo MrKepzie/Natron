@@ -274,6 +274,7 @@ public:
 
     int getHardwareIdealThreadCount();
     int getPhysicalThreadCount();
+    int getMaxThreadCount(); //!<  actual number of threads in the thread pool (depends on application settings)
 
     void setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect);
     
@@ -580,7 +581,7 @@ private:
                          const QString& script);
 
 
-    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
+    virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
     bool loadInternal(const CLArgs& cl);
 

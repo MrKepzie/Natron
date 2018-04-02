@@ -31,6 +31,7 @@
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
+#include <boost/make_shared.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
@@ -115,20 +116,18 @@ typedef boost::shared_ptr<FrameViewRenderRunnable> FrameViewRenderRunnablePtr;
  * Once rendered, this task will make tasks that depend on this task's results available for render.
  **/
 class FrameViewRenderRunnable
-: public QRunnable
-, public boost::enable_shared_from_this<FrameViewRenderRunnable>
+    : public QRunnable
+    , public boost::enable_shared_from_this<FrameViewRenderRunnable>
 {
     struct Implementation;
 
+    struct MakeSharedEnabler;
+
+    // used by boost::make_shared<>
     FrameViewRenderRunnable(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request);
 
 public:
-
-    static FrameViewRenderRunnablePtr create(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
-    {
-        return FrameViewRenderRunnablePtr(new FrameViewRenderRunnable(sharedData, request));
-    }
-
+    static FrameViewRenderRunnablePtr create(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request);
 
     virtual ~FrameViewRenderRunnable();
 

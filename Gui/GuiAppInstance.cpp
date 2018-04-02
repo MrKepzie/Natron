@@ -102,7 +102,7 @@ struct GuiAppInstancePrivate
     ////as the main "action" thread.
     int _showingDialog;
     mutable QMutex _showingDialogMutex;
-    boost::shared_ptr<FileDialogPreviewProvider> _previewProvider;
+    FileDialogPreviewProviderPtr _previewProvider;
     mutable QMutex lastTimelineViewerMutex;
     NodePtr lastTimelineViewer;
     LoadProjectSplashScreen* loadProjectSplash;
@@ -124,7 +124,7 @@ struct GuiAppInstancePrivate
         , _isClosing(false)
         , _showingDialog(0)
         , _showingDialogMutex()
-        , _previewProvider(new FileDialogPreviewProvider)
+        , _previewProvider()
         , lastTimelineViewerMutex()
         , lastTimelineViewer()
         , loadProjectSplash(0)
@@ -150,7 +150,7 @@ void
 GuiAppInstance::resetPreviewProvider()
 {
     deletePreviewProvider();
-    _imp->_previewProvider.reset(new FileDialogPreviewProvider);
+    _imp->_previewProvider = boost::make_shared<FileDialogPreviewProvider>();
 }
 
 void
@@ -236,7 +236,7 @@ GuiAppInstance::createMainWindow()
 }
 
 #ifdef Q_OS_MAC
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 class Qt4RetinaFixStyle : public QMacStyle
 {
 public:
@@ -303,7 +303,7 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     createMainWindow();
 
 #ifdef Q_OS_MAC
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     // On Qt4 for Mac, Retina is not well supported, see:
     // https://bugreports.qt.io/browse/QTBUG-23870
     // Note that setting the application style will override any
@@ -802,7 +802,7 @@ GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
 }
 
 
-boost::shared_ptr<FileDialogPreviewProvider>
+FileDialogPreviewProviderPtr
 GuiAppInstance::getPreviewProvider() const
 {
     return _imp->_previewProvider;

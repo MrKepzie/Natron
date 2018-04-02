@@ -43,7 +43,7 @@ class TableItemAnim : public QObject, public KnobsHolderAnimBase, public boost::
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-
+    struct MakeSharedEnabler;
 
     TableItemAnim(const AnimationModuleBasePtr& model,
                   const KnobItemsTableGuiPtr& table,
@@ -51,17 +51,11 @@ class TableItemAnim : public QObject, public KnobsHolderAnimBase, public boost::
                   const KnobTableItemPtr& item);
 
 public:
-
     static TableItemAnimPtr create(const AnimationModuleBasePtr& model,
                                    const KnobItemsTableGuiPtr& table,
                                    const NodeAnimPtr &parentNode,
                                    const KnobTableItemPtr& item,
-                                   QTreeWidgetItem* parentItem)
-    {
-        TableItemAnimPtr ret(new TableItemAnim(model, table, parentNode, item));
-        ret->initialize(parentItem);
-        return ret;
-    }
+                                   QTreeWidgetItem* parentItem);
 
     virtual ~TableItemAnim();
 

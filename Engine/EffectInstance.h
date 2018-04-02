@@ -266,7 +266,7 @@ public:
         RectI roi;
 
         // The list of output planes: these are the images to write to in output
-        std::list<std::pair<ImagePlaneDesc, ImagePtr > > outputPlanes;
+        std::list<std::pair<ImagePlaneDesc, ImagePtr> > outputPlanes;
 
         // Should render use OpenGL or CPU or any other supported device
         RenderBackendTypeEnum backendType;
@@ -1084,10 +1084,9 @@ public:
     virtual RenderEnginePtr createRenderEngine();
 
     /**
-     * @brief Returns true if the node is capable of generating
-     * data and process data on the input as well
+     * @brief Returns true if the node is capable of processing data from its input
      **/
-    virtual bool isGeneratorAndFilter() const WARN_UNUSED_RETURN
+    virtual bool isFilter() const WARN_UNUSED_RETURN
     {
         return false;
     }

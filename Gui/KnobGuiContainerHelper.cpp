@@ -101,7 +101,7 @@ struct KnobGuiContainerHelperPrivate
         if (stack) {
             undoStack = stack;
         } else {
-            undoStack.reset(new QUndoStack);
+            undoStack = boost::make_shared<QUndoStack>();
         }
     }
 
@@ -186,10 +186,10 @@ KnobGuiContainerHelperPrivate::findKnobGui(const KnobIPtr& knob)
 KnobPageGuiPtr
 KnobGuiContainerHelper::getOrCreateDefaultPage()
 {
-    const std::vector< KnobIPtr > & knobs = getInternalKnobs();
+    const std::vector<KnobIPtr> & knobs = getInternalKnobs();
 
     // Find in all knobs a page param to set this param into
-    std::list<KnobPagePtr > pagesNotDeclaredByPlugin;
+    std::list<KnobPagePtr> pagesNotDeclaredByPlugin;
     for (U32 i = 0; i < knobs.size(); ++i) {
         KnobPagePtr p = toKnobPage( knobs[i]);
         if (p) {
@@ -282,7 +282,7 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
     pageGui->groupAsTab = 0;
     pageGui->gridLayout = tabLayout;
 
-    boost::shared_ptr<KnobSignalSlotHandler> handler = page->getSignalSlotHandler();
+    KnobSignalSlotHandlerPtr handler = page->getSignalSlotHandler();
     QObject::connect( handler.get(), SIGNAL(labelChanged()), _imp->signals.get(), SLOT(onPageLabelChangedInternally()) );
     QObject::connect( handler.get(), SIGNAL(secretChanged()), _imp->signals.get(), SLOT(onPageSecretnessChanged()) );
 
@@ -455,7 +455,7 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
 {
     // Extract pages first and initialize them recursively
     // All other knobs are put in regularKnobs
-    std::list<KnobPagePtr > pages;
+    std::list<KnobPagePtr> pages;
     KnobsVec regularKnobs;
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
@@ -468,7 +468,7 @@ KnobGuiContainerHelper::initializeKnobVector(const KnobsVec& knobs)
             regularKnobs.push_back(knobs[i]);
         }
     }
-    for (std::list<KnobPagePtr >::iterator it = pages.begin(); it != pages.end(); ++it) {
+    for (std::list<KnobPagePtr>::iterator it = pages.begin(); it != pages.end(); ++it) {
         // Create page
         KnobGuiPtr knobGui = findKnobGuiOrCreate(*it);
         Q_UNUSED(knobGui);
@@ -1150,7 +1150,7 @@ KnobGuiContainerHelper::refreshPagesOrder(const KnobPageGuiPtr& curTabName,
     }
     std::list<KnobPageGuiPtr> orderedPages;
     const KnobsVec& knobs = getInternalKnobs();
-    std::list<KnobPagePtr > internalPages;
+    std::list<KnobPagePtr> internalPages;
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
         KnobPagePtr isPage = toKnobPage(*it);
         if (isPage && !isPage->getIsSecret()) {
@@ -1158,7 +1158,7 @@ KnobGuiContainerHelper::refreshPagesOrder(const KnobPageGuiPtr& curTabName,
         }
     }
 
-    for (std::list<KnobPagePtr >::iterator it = internalPages.begin(); it != internalPages.end(); ++it) {
+    for (std::list<KnobPagePtr>::iterator it = internalPages.begin(); it != internalPages.end(); ++it) {
         PagesMap::const_iterator foundPage = _imp->pages.find(*it);
         if ( foundPage != _imp->pages.end() ) {
             orderedPages.push_back(foundPage->second);
@@ -1282,7 +1282,7 @@ KnobGuiContainerHelper::pushUndoCommand(QUndoCommand* cmd)
     refreshUndoRedoButtonsEnabledNess( _imp->undoStack->canUndo(), _imp->undoStack->canRedo() );
 }
 
-boost::shared_ptr<QUndoStack>
+QUndoStackPtr
 KnobGuiContainerHelper::getUndoStack() const
 {
     return _imp->undoStack;

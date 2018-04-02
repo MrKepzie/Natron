@@ -32,6 +32,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QDebug>
 #include <QLayout>
 #include <QAction>
 #include <QtCore/QThread>
@@ -140,7 +141,7 @@ using std::make_pair;
 static void
 replaceLineBreaksWithHtmlParagraph(QString &txt)
 {
-    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br >") );
+    txt.replace( QString::fromUtf8("\n"), QString::fromUtf8("<br />") );
 }
 
 static void
@@ -274,7 +275,7 @@ NodeGui::initialize(NodeGraph* dag,
 
     {
         bool isTopLevelNodeBeingCreated = internalNode->getApp()->isTopLevelNodeBeingCreated(internalNode);
-        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
         bool panelOpened = isViewerNode ? false : args.getPropertyUnsafe<bool>(kCreateNodeArgsPropSettingsOpened);
         if ((!serialization && panelOpened && isTopLevelNodeBeingCreated) ) {
             ensurePanelCreated();
@@ -324,20 +325,19 @@ NodeGui::initialize(NodeGraph* dag,
 
 } // initialize
 
-void
-NodeGui::setColorFromGrouping()
+bool
+NodeGui::getColorFromGrouping(QColor* color)
 {
     NodePtr internalNode = getNode();
     if (!internalNode) {
-        return;
+        return false;
     }
     double r, g, b;
     internalNode->getDefaultColor(&r, &g, &b);
-    QColor color;
-    color.setRgbF( Image::clamp<double>(r, 0., 1.),
-                   Image::clamp<double>(g, 0., 1.),
-                   Image::clamp<double>(b, 0., 1.) );
-    setCurrentColor(color);
+    color->setRgbF( Image::clamp<double>(r, 0., 1.),
+                    Image::clamp<double>(g, 0., 1.),
+                    Image::clamp<double>(b, 0., 1.) );
+    return true;
 }
 
 void
@@ -347,15 +347,21 @@ NodeGui::restoreStateAfterCreation(const CreateNodeArgs& args)
     if (!internalNode) {
         return;
     }
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     if (!serialization) {
-        setColorFromGrouping();
+        QColor color;
+        if ( getColorFromGrouping(&color) ) {
+            setCurrentColor(color);
+        }
     } else {
         double r, g, b;
         internalNode->getColor(&r, &g, &b);
         if (r == -1 && g == -1 && b == -1) {
             // Use default
-            setColorFromGrouping();
+            QColor color;
+            if ( getColorFromGrouping(&color) ) {
+                setCurrentColor(color);
+            }
         } else {
             QColor color;
             color.setRgbF( Image::clamp<double>(r, 0., 1.),
@@ -621,7 +627,7 @@ NodeGui::createGui()
     animGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
     animGrad.push_back( qMakePair( 0.3, QColor(Qt::red) ) );
     animGrad.push_back( qMakePair( 1., QColor(192, 64, 64) ) );
-    _animationIndicator.reset(new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("A"), bbox.topRight(), ellipseDiam, ellipseDiam, animGrad, QColor(255, 255, 255), this) );
+    _animationIndicator = boost::make_shared<NodeGuiIndicator>(getDagGui(), depth + 2, QString::fromUtf8("A"), bbox.topRight(), ellipseDiam, ellipseDiam, animGrad, QColor(255, 255, 255), this);
     _animationIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or several parameters with an animation"), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _animationIndicator->setActive(false);
 
@@ -881,7 +887,6 @@ NodeGui::resize(int width,
     if ( !canResize() ) {
         return;
     }
-
     const bool hasPluginIcon = _pluginIcon && _pluginIcon->isVisible();
 
     adjustSizeToContent(&width, &height, adjustToTextSize);
@@ -1203,7 +1208,7 @@ NodeGui::refreshDashedStateOfEdges()
 void
 NodeGui::refreshEdges()
 {
-    const std::vector<NodeWPtr > & nodeInputs = getNode()->getInputs();
+    const std::vector<NodeWPtr> & nodeInputs = getNode()->getInputs();
 
     if ( _inputEdges.size() != nodeInputs.size() ) {
         return;
@@ -1425,7 +1430,7 @@ NodeGui::initializeInputs()
     NodePtr node = getNode();
 
     ///The actual numbers of inputs of the internal node
-    const std::vector<NodeWPtr >& inputs = node->getInputs();
+    const std::vector<NodeWPtr>& inputs = node->getInputs();
 
     ///Delete all  inputs that may exist
     for (InputEdges::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
@@ -1533,6 +1538,7 @@ NodeGui::boundingRect() const
 {
     QTransform t;
     QRectF bbox = _boundingBox->boundingRect();
+
     QPointF center = bbox.center();
 
     t.translate( center.x(), center.y() );
@@ -1765,7 +1771,7 @@ NodeGui::findConnectedEdge(NodeGui* parent)
 bool
 NodeGui::connectEdge(int edgeNumber)
 {
-    const std::vector<NodeWPtr > & inputs = getNode()->getInputs();
+    const std::vector<NodeWPtr> & inputs = getNode()->getInputs();
 
     if ( (edgeNumber < 0) || ( edgeNumber >= (int)inputs.size() ) || ( _inputEdges.size() != inputs.size() ) ) {
         return false;
@@ -2116,7 +2122,7 @@ NodeGui::getKnobs() const
 
 
 
-boost::shared_ptr<QUndoStack>
+QUndoStackPtr
 NodeGui::getUndoStack() const
 {
     return _undoStack;
@@ -2152,11 +2158,12 @@ NodeGui::refreshStateIndicator()
 
     bool showIndicator = true;
     int value = getNode()->getIsNodeRenderingCounter();
+    bool isSelected = getIsSelected();
     if (value >= 1) {
         _stateIndicator->setBrush(Qt::yellow);
     } else if (_mergeHintActive) {
         _stateIndicator->setBrush(Qt::green);
-    } else if ( getIsSelected() ) {
+    } else if (isSelected) {
         _stateIndicator->setBrush(Qt::white);
     } else if (hasPersistentMessage) {
         if (type == eMessageTypeError) {
@@ -2168,6 +2175,14 @@ NodeGui::refreshStateIndicator()
         showIndicator = false;
     }
 
+    if (_outputEdge) {
+        _outputEdge->setUseSelected(isSelected);
+    }
+    for (std::vector<Edge*>::iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
+        if (*it) {
+            (*it)->setUseSelected(isSelected);
+        }
+    }
     if ( showIndicator && !_stateIndicator->isVisible() ) {
         _stateIndicator->show();
     } else if ( !showIndicator && _stateIndicator->isVisible() ) {
@@ -2439,7 +2454,7 @@ struct NodeGuiIndicatorPrivate
 
         textItem->setBrush(textColor);
         textItem->setZValue(depth);
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
         textItem->scale(0.8, 0.8);
 #else
         textItem->setScale(0.8);
@@ -2574,7 +2589,7 @@ NodeGui::onOutputLayerChanged()
     if (processAllKnob && processAllKnob->hasModifications()) {
         processAll = processAllKnob->getValue();
         if (processAll) {
-            //extraLayerStr.append( QString::fromUtf8("<br>") );
+            //extraLayerStr.append( QString::fromUtf8("<br />") );
             extraLayerStr += tr("(All)");
         }
     }
@@ -2591,7 +2606,7 @@ NodeGui::onOutputLayerChanged()
     if (!processAll && outputLayer.getNumComponents() > 0) {
         if (!outputLayer.isColorPlane()) {
             if (!extraLayerStr.isEmpty()) {
-                extraLayerStr.append( QString::fromUtf8("<br>") );
+                extraLayerStr.append( QString::fromUtf8("<br />") );
             }
             extraLayerStr.push_back( QLatin1Char('(') );
             extraLayerStr.append( QString::fromUtf8( outputLayer.getPlaneLabel().c_str() ) );
@@ -2614,7 +2629,7 @@ NodeGui::onOutputLayerChanged()
 
     if (hasChannelChanged && outputLayer.getNumComponents() > 0) {
         if (!extraLayerStr.isEmpty()) {
-            extraLayerStr.append( QString::fromUtf8("<br>") );
+            extraLayerStr.append( QString::fromUtf8("<br />") );
         }
         extraLayerStr.push_back( QLatin1Char('(') );
 
@@ -3399,6 +3414,8 @@ GroupKnobDialog::~GroupKnobDialog()
 {
 }
 
+typedef boost::shared_ptr<GroupKnobDialog> GroupKnobDialogPtr;
+
 void
 GroupKnobDialog::onDialogBoxButtonClicked(QAbstractButton* button)
 {
@@ -3810,7 +3827,10 @@ NodeGui::onNodePresetsChanged()
     if (!plugin) {
         return;
     }
-    setColorFromGrouping();
+    QColor color;
+    if ( getColorFromGrouping(&color) ) {
+        setCurrentColor(color);
+    }
     refreshPluginInfo();
 
     QPixmap pixmap;

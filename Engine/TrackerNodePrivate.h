@@ -604,9 +604,10 @@ struct SolveRequest
 class TrackerKnobItemsTable;
 class TrackerNode;
 class TrackerNodeInteract;
+
 class TrackerNodePrivate
-: public TrackerParamsProvider
-, public boost::enable_shared_from_this<TrackerNodePrivate>
+    : public TrackerParamsProvider
+    , public boost::enable_shared_from_this<TrackerNodePrivate>
 {
     Q_DECLARE_TR_FUNCTIONS(TrackerNodePrivate)
 
@@ -688,17 +689,13 @@ public:
 
     SolveRequest lastSolveRequest;
 
+    struct MakeSharedEnabler;
 
-private:
-
+    // used by boost::make_shared<>
     TrackerNodePrivate(TrackerNode* publicInterface);
 
 public:
-
-    static boost::shared_ptr<TrackerNodePrivate> create(TrackerNode* publicInterface)
-    {
-        return boost::shared_ptr<TrackerNodePrivate>(new TrackerNodePrivate(publicInterface));
-    }
+    static boost::shared_ptr<TrackerNodePrivate> create(TrackerNode* publicInterface);
 
     virtual ~TrackerNodePrivate();
 
@@ -821,11 +818,11 @@ public:
     
     virtual SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr createSerializationFromItem(const KnobTableItemPtr& item) OVERRIDE FINAL;
 
-    void getAllMarkers(std::vector<TrackMarkerPtr >* markers) const;
+    void getAllMarkers(std::vector<TrackMarkerPtr>* markers) const;
 
-    void getSelectedMarkers(std::list<TrackMarkerPtr >* markers) const;
+    void getSelectedMarkers(std::list<TrackMarkerPtr>* markers) const;
 
-    void getAllEnabledMarkers(std::list<TrackMarkerPtr >* markers) const;
+    void getAllEnabledMarkers(std::list<TrackMarkerPtr>* markers) const;
 
     bool isMarkerSelected(const TrackMarkerPtr& marker) const;
 
@@ -893,7 +890,7 @@ public:
     TrackerDrawStateEnum hoverState;
     TrackMarkerPtr interactMarker, hoverMarker;
 
-    typedef std::map<TimeValue, GLTexturePtr > KeyFrameTexIDs;
+    typedef std::map<TimeValue, GLTexturePtr> KeyFrameTexIDs;
     typedef std::map<boost::weak_ptr<TrackMarker>, KeyFrameTexIDs> TrackKeysMap;
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;

@@ -59,7 +59,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 #include <QtGui/QKeyEvent>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QtGui/QColor>
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 #include <QtGui/QAction>
 #include <QtGui/QApplication>
 #include <QtGui/QStylePainter>
@@ -1434,7 +1434,7 @@ SequenceFileDialog::createDir()
 
     NATRON_PYTHON_NAMESPACE::PyModalDialog dialog(_gui);
     dialog.setWindowTitle( tr("New Folder") );
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::StringParam> folderName( dialog.createStringParam( QString::fromUtf8("folderName"), QString::fromUtf8("Folder Name") ) );
+    NATRON_PYTHON_NAMESPACE::StringParamPtr folderName( dialog.createStringParam( QString::fromUtf8("folderName"), QString::fromUtf8("Folder Name") ) );
     dialog.refreshUserParamsGUI();
     if ( dialog.exec() ) {
         QString newFolderString = folderName->getValue();
@@ -2797,11 +2797,11 @@ FileDialogComboBox::paintEvent(QPaintEvent* /*e*/)
     painter.drawControl(QStyle::CE_ComboBoxLabel, opt);
 }
 
-std::vector< SequenceParsing::SequenceFromFilesPtr >
+std::vector<SequenceParsing::SequenceFromFilesPtr>
 SequenceFileDialog::fileSequencesFromFilesList(const QStringList & files,
                                                const QStringList & supportedFileTypes)
 {
-    std::vector< SequenceParsing::SequenceFromFilesPtr > sequences;
+    std::vector<SequenceParsing::SequenceFromFilesPtr> sequences;
 
     for (int i = 0; i < files.size(); ++i) {
         SequenceParsing::FileNameContent fileContent( files.at(i).toStdString() );

@@ -349,9 +349,9 @@ public:
 
     /**
      * @brief Removes the interface for this node of any viewer
-     * @bool permanantly If true, the interface will be destroyed instead of hidden
+     * @bool permanently If true, the interface will be destroyed instead of hidden
      **/
-    void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanantly);
+    void removeNodeViewerInterface(const NodeGuiPtr& n, bool permanently);
 
     /**
      * @brief Same as removeNodeViewerInterface but for the Viewer node UI only
@@ -494,7 +494,7 @@ public:
 
     bool saveProjectAs(const std::string& filename);
 
-    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector< SequenceParsing::SequenceFromFilesPtr >* sequences);
+    static void fileSequencesFromUrls(const QList<QUrl>& urls, std::vector<SequenceParsing::SequenceFromFilesPtr>* sequences);
 
     void handleOpenFilesFromUrls(const QList<QUrl>& urls, const QPoint& globalPos);
 

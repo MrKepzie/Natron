@@ -1300,7 +1300,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool /*hasGUI*
     findOrCreateChannelEnabled();
 
     ///Find in the plug-in the Mask/Mix related parameter to re-order them so it is consistent across nodes
-    std::vector<std::pair<std::string, KnobIPtr > > foundPluginDefaultKnobsToReorder;
+    std::vector<std::pair<std::string, KnobIPtr> > foundPluginDefaultKnobsToReorder;
     foundPluginDefaultKnobsToReorder.push_back( std::make_pair( kOfxMaskInvertParamName, KnobIPtr() ) );
     foundPluginDefaultKnobsToReorder.push_back( std::make_pair( kOfxMixParamName, KnobIPtr() ) );
     ///Insert auto-added knobs before mask invert if found
@@ -1406,12 +1406,12 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool /*hasGUI*
             mainPage = getOrCreateMainPage();
         }
 
-        KnobButtonPtr renderButton = createKnob<KnobButton>("startRender");
+        KnobButtonPtr renderButton = createKnob<KnobButton>(kNatronWriteParamStartRender);
         renderButton->setKnobDeclarationType(KnobI::eKnobDeclarationTypeHost);
         renderButton->setLabel(tr("Render"));
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();
-        renderButton->setName("startRender");
+        renderButton->setName(kNatronWriteParamStartRender);
         renderButton->setEvaluateOnChange(false);
         _imp->defKnobs->renderButton = renderButton;
         mainPage->addKnob(renderButton);

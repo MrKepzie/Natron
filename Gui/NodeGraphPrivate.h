@@ -28,6 +28,12 @@
 #include "Global/Macros.h"
 #include <set>
 
+#include <set>
+#include <list>
+#include <map>
+#include <utility>
+#include <string>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/weak_ptr.hpp>
 #endif
@@ -240,7 +246,7 @@ public:
      * @brief Serialize the given node list 
      **/
     void copyNodesInternal(const NodesGuiList& selection, SERIALIZATION_NAMESPACE::NodeSerializationList* clipboard);
-    void copyNodesInternal(const NodesGuiList& selection, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >* clipboard);
+    void copyNodesInternal(const NodesGuiList& selection, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >* clipboard);
 
     enum PasteNodesFlagEnum
     {
@@ -265,7 +271,7 @@ public:
     /**
      * @brief Paste the given nodes with flags. This will create new copies of the nodes
      **/
-    void pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& originalNodes,
+    void pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr> >& originalNodes,
                             const QPointF& newCentroidScenePos,
                             PasteNodesFlags flags);
 
@@ -301,6 +307,8 @@ public:
     bool rearrangeSelectedNodes();
 
     void toggleSelectedNodesEnabled();
+
+    void getNodeSet(const NodesGuiList& nodeList, std::set<NodeGuiPtr>& nodeSet);
 };
 
 NATRON_NAMESPACE_EXIT

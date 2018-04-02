@@ -43,6 +43,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/uuid/uuid.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 #include "Engine/CacheEntryBase.h"
@@ -283,6 +284,8 @@ class CacheEntryLocker : public CacheEntryLockerBase
 {
     // For create
     friend class Cache<persistent>;
+
+    struct MakeSharedEnabler;
 
     CacheEntryLocker(const boost::shared_ptr<Cache<persistent> >& cache, const CacheEntryBasePtr& entry);
 
@@ -566,14 +569,13 @@ class Cache
     friend struct CacheEntryLockerPrivate<persistent>;
     friend class CacheEntryLocker<persistent>;
     friend struct CacheBucket<persistent>;
-
+    
     void initialize(const boost::shared_ptr<Cache<persistent> >& thisShared);
 
-    Cache(bool enableTileStorage);
 
 public:
-
-
+    // used by make_shared
+    Cache(bool enableTileStorage);
 
     virtual ~Cache();
 

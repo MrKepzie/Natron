@@ -226,28 +226,38 @@ struct TableModelPrivate
     }
 };
 
+
 TableItem::TableItem(const TableModelPtr& model)
 : _imp(new TableItemPrivate(model))
 {
-    
 }
 
 
 TableItem::~TableItem()
 {
-
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TableItem::MakeSharedEnabler: public TableItem
+{
+    MakeSharedEnabler(const TableModelPtr& model) : TableItem(model) {
+    }
+};
+
 
 TableItemPtr
 TableItem::create(const TableModelPtr& model, const TableItemPtr& parent)
 {
-    TableItemPtr ret(new TableItem(model));
+    TableItemPtr ret = boost::make_shared<TableItem::MakeSharedEnabler>(model);
     if (parent) {
         // Inserting the item in the parent may not succeed if parent is not in a model already.
         parent->insertChild(-1, ret);
     }
     return ret;
 }
+
 
 TableItemPtr
 TableItem::getParentItem() const
@@ -459,6 +469,23 @@ TableModel::TableModel(int columns, TableModelTypeEnum type)
 {
     QObject::connect( this, SIGNAL(dataChanged(QModelIndex,QModelIndex)), this, SLOT(onDataChanged(QModelIndex, QModelIndex)) );
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct TableModel::MakeSharedEnabler: public TableModel
+{
+    MakeSharedEnabler(int columns, TableModelTypeEnum type) : TableModel(columns, type) {
+    }
+};
+
+
+TableModelPtr
+TableModel::create(int columns, TableModelTypeEnum type)
+{
+    return boost::make_shared<TableModel::MakeSharedEnabler>(columns, type);
+}
+
 
 TableModel::~TableModel()
 {
@@ -1313,11 +1340,17 @@ ExpandingLineEdit::resizeToContents()
     }
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 QWidget*
-TableItemEditorFactory::createEditor(QVariant::Type type,
+TableItemEditorFactory::createEditor(QVariant::Type userType,
                                      QWidget *parent) const
+#else
+QWidget*
+TableItemEditorFactory::createEditor(int userType,
+                                     QWidget *parent) const
+#endif
 {
-    switch (type) {
+    switch (userType) {
     case QVariant::UInt: {
         SpinBox *sb = new SpinBox(parent, SpinBox::eSpinBoxTypeInt);
         sb->setFrame(false);
@@ -1360,10 +1393,15 @@ TableItemEditorFactory::createEditor(QVariant::Type type,
     return 0;
 }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 QByteArray
-TableItemEditorFactory::valuePropertyName(QVariant::Type type) const
+TableItemEditorFactory::valuePropertyName(QVariant::Type userType) const
+#else
+QByteArray
+TableItemEditorFactory::valuePropertyName(int userType) const
+#endif
 {
-    switch (type) {
+    switch (userType) {
     case QVariant::UInt:
     case QVariant::Int:
     case QVariant::Double:
