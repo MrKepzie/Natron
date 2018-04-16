@@ -1511,7 +1511,7 @@ TabBar::mouseMoveEvent(QMouseEvent* e)
 QPixmap
 TabBar::makePixmapForDrag(int index)
 {
-    std::vector< std::pair<QString, QIcon > > tabs;
+    std::vector<std::pair<QString, QIcon > > tabs;
 
     for (int i = 0; i < count(); ++i) {
         tabs.push_back( std::make_pair( tabText(i), tabIcon(i) ) );
@@ -1526,7 +1526,7 @@ TabBar::makePixmapForDrag(int index)
     addTab(tabs[index].second, tabs[index].first);
 
     QPixmap currentTabPixmap =  Gui::screenShot( _tabWidget->tabAt(index)->getWidget() );
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     QPixmap tabBarPixmap = QPixmap::grabWidget(this);
 #else
     QPixmap tabBarPixmap = grab();
@@ -2002,7 +2002,7 @@ TabWidget::setScriptName(const std::string & newName)
         setObjectName(str);
     }
     QString tt = NATRON_NAMESPACE::convertFromPlainText(tr(LEFT_HAND_CORNER_BUTTON_TT), NATRON_NAMESPACE::WhiteSpaceNormal);
-    QString toPre = QString::fromUtf8("Script name: <font size = 4><b>%1</font></b><br/>").arg(str);
+    QString toPre = QString::fromUtf8("Script name: <font size=\"4\"><b>%1</font></b><br/>").arg(str);
 
     tt.prepend(toPre);
     _imp->leftCornerButton->setToolTip(tt);

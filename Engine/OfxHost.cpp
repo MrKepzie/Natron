@@ -92,6 +92,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/FStreamsSupport.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -153,7 +156,7 @@ string_format(const std::string fmt,
 
 struct OfxHostPrivate
 {
-    boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;
+    OFX::Host::ImageEffect::PluginCachePtr imageEffectPluginCache;
     boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
     std::string loadingPluginID; // ID of the plugin being loaded
@@ -162,18 +165,19 @@ struct OfxHostPrivate
 
     OfxHostPrivate()
         : imageEffectPluginCache()
-        , tlsData( new TLSHolder<OfxHost::OfxHostTLSData>() )
+        , tlsData()
         , loadingPluginID()
         , loadingPluginVersionMajor(0)
         , loadingPluginVersionMinor(0)
     {
+        tlsData = boost::make_shared<TLSHolder<OfxHost::OfxHostTLSData> >();
     }
 };
 
 OfxHost::OfxHost()
     : _imp( new OfxHostPrivate() )
 {
-    _imp->imageEffectPluginCache.reset( new OFX::Host::ImageEffect::PluginCache(*this) );
+    _imp->imageEffectPluginCache = boost::make_shared<OFX::Host::ImageEffect::PluginCache>((OFX::Host::ImageEffect::Host*)this);
 }
 
 OfxHost::~OfxHost()
@@ -726,12 +730,14 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
         int nShiftDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasShiftModifier);
         int nAltDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasAltModifier);
         int nMetaDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasMetaModifier);
+        int nKeypadDims = desc.getProps().getDimension(kNatronOfxImageEffectPropInViewerContextShortcutHasKeypadModifier);
 
         if (nSymDims != nDims ||
             nCtrlDims != nDims ||
             nShiftDims != nDims ||
             nAltDims != nDims ||
-            nMetaDims != nDims) {
+            nMetaDims != nDims ||
+            nKeypadDims != nDims) {
             std::cerr << desc.getPlugin()->getIdentifier() << ": Invalid dimension setup of the NatronOfxImageEffectPropInViewerContextDefaultShortcuts property." << std::endl;
             return;
         }
@@ -746,6 +752,7 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
         int hasShift = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasShiftModifier, i);
         int hasAlt = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasAltModifier, i);
         int hasMeta = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasMetaModifier, i);
+        int hasKeypad = desc.getProps().getIntProperty(kNatronOfxImageEffectPropInViewerContextShortcutHasKeypadModifier, i);
 
         std::map<std::string, OFX::Host::Param::Descriptor*>::const_iterator foundParamDesc = paramDescriptors.find(paramName);
         if (foundParamDesc == paramDescriptors.end()) {
@@ -1041,7 +1048,7 @@ OfxHost::clearPluginsLoadedCache()
     if ( QFile::exists(oldOfxCache) ) {
         QFile::remove(oldOfxCache);
     }
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     QtCompat::removeRecursively( getOFXCacheDirPath() );
 #else
     QDir OFXCacheDir( getOFXCacheDirPath() );
@@ -1141,7 +1148,11 @@ static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
                                                unsigned int threadMax,
                                                void *customArg)
 {
-
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
     ThreadIsActionCaller_RAII actionCallerRaii(args->effect);
     try {
@@ -1159,6 +1170,11 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
                      unsigned int nThreads,
                      void *customArg)
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     if (!func) {
         return kOfxStatFailed;
     }
@@ -1190,7 +1206,7 @@ OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
     }
 
     // Always return the max num CPUs, let multiThread handle the actual threading
-    *nCPUs = appPTR->getHardwareIdealThreadCount();//MultiThread::getNCPUsAvailable(getCurrentEffect_TLS());
+    *nCPUs = appPTR->getMaxThreadCount();//MultiThread::getNCPUsAvailable(getCurrentEffect_TLS());
     return kOfxStatOK;
 }
 

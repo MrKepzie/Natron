@@ -28,6 +28,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/make_shared.hpp>
+
 #ifdef __NATRON_WIN32__
 #include <windows.h>
 #endif
@@ -36,6 +38,7 @@
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QMutex>
 #include <QtCore/QWaitCondition>
 #include <QtCore/QFileSystemWatcher>
@@ -50,6 +53,9 @@ CLANG_DIAG_ON(uninitialized)
 
 #include <SequenceParsing.h>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 NATRON_NAMESPACE_ENTER
 
@@ -118,7 +124,7 @@ struct FileSystemModelPrivate
     int sortSection;
     mutable QMutex sortMutex;
     mutable QMutex mappingMutex;
-    std::map<FileSystemItem*, boost::weak_ptr<FileSystemItem> > itemsMap;
+    std::map<FileSystemItem*, FileSystemItemWPtr> itemsMap;
 
 
     FileSystemModelPrivate(FileSystemModel* model)
@@ -171,7 +177,7 @@ struct FileSystemItemPrivate
 {
     boost::weak_ptr<FileSystemModel> model;
     boost::weak_ptr<FileSystemItem> parent;
-    std::vector< FileSystemItemPtr > children; ///vector for random access
+    std::vector<FileSystemItemPtr> children; ///vector for random access
     QMutex childrenMutex;
     bool isDir;
     QString filename;
@@ -241,6 +247,37 @@ FileSystemItem::FileSystemItem(const FileSystemModelPtr& model,
     : _imp( new FileSystemItemPrivate(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) )
 {
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct FileSystemItem::MakeSharedEnabler: public FileSystemItem
+{
+    MakeSharedEnabler(const FileSystemModelPtr& model,
+                      bool isDir,
+                      const QString& filename,
+                      const QString& userFriendlySequenceName,
+                      const SequenceParsing::SequenceFromFilesPtr& sequence,
+                      const QDateTime& dateModified,
+                      quint64 size,
+                      const FileSystemItemPtr& parent) : FileSystemItem(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent) {
+    }
+};
+
+
+FileSystemItemPtr
+FileSystemItem::create(const FileSystemModelPtr& model,
+                       bool isDir,
+                       const QString& filename,
+                       const QString& userFriendlySequenceName,
+                       const SequenceParsing::SequenceFromFilesPtr& sequence,
+                       const QDateTime& dateModified,
+                       quint64 size,
+                       const FileSystemItemPtr& parent)
+{
+    return boost::make_shared<FileSystemItem::MakeSharedEnabler>(model, isDir, filename, userFriendlySequenceName, sequence, dateModified, size, parent);
+}
+
 
 FileSystemItem::~FileSystemItem()
 {
@@ -382,7 +419,7 @@ FileSystemItem::addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
     }
 
 
-    for (std::vector<FileSystemItemPtr >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+    for (std::vector<FileSystemItemPtr>::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         if ( (*it)->fileName() == filename ) {
             _imp->children.erase(it);
             break;
@@ -400,14 +437,14 @@ FileSystemItem::addChild(const SequenceParsing::SequenceFromFilesPtr& sequence,
 
 
     ///Create the child
-    FileSystemItemPtr child( new FileSystemItem( model,
-                                                                 isDir,
-                                                                 filename,
-                                                                 userFriendlyFilename,
-                                                                 sequence,
-                                                                 info.lastModified(),
-                                                                 size,
-                                                                 shared_from_this() ) );
+    FileSystemItemPtr child = create( model,
+                                     isDir,
+                                     filename,
+                                     userFriendlyFilename,
+                                     sequence,
+                                     info.lastModified(),
+                                     size,
+                                     shared_from_this() );
     model->_imp->registerItem(child);
     _imp->children.push_back(child);
 } // FileSystemItem::addChild
@@ -467,6 +504,7 @@ FileSystemModel::initialize(SortableViewI* view)
     initGatherer();
 
 
+    // scoped_ptr
     _imp->watcher.reset(new QFileSystemWatcher);
     assert(_imp->watcher);
     QObject::connect( _imp->watcher.get(), SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)) );
@@ -554,7 +592,7 @@ void
 FileSystemModelPrivate::unregisterItem(FileSystemItem* item)
 {
     QMutexLocker k(&mappingMutex);
-    std::map<FileSystemItem*, boost::weak_ptr<FileSystemItem> >::iterator found = itemsMap.find(item);
+    std::map<FileSystemItem*, FileSystemItemWPtr>::iterator found = itemsMap.find(item);
 
     if ( found != itemsMap.end() ) {
         itemsMap.erase(found);
@@ -565,7 +603,7 @@ FileSystemItemPtr
 FileSystemModel::getSharedItemPtr(FileSystemItem* item) const
 {
     QMutexLocker k(&_imp->mappingMutex);
-    std::map<FileSystemItem*, boost::weak_ptr<FileSystemItem> >::const_iterator found = _imp->itemsMap.find(item);
+    std::map<FileSystemItem*, FileSystemItemWPtr>::const_iterator found = _imp->itemsMap.find(item);
 
     if ( found != _imp->itemsMap.end() ) {
         return found->second.lock();
@@ -1195,6 +1233,7 @@ FileSystemModel::setRootPath(const QString& path)
         return false;
     }
     if (item != _imp->rootItem) {
+        // scoped_ptr
         _imp->watcher.reset(new QFileSystemWatcher);
         assert(_imp->watcher);
         QObject::connect( _imp->watcher.get(), SIGNAL(directoryChanged(QString)), this, SLOT(onWatchedDirectoryChanged(QString)) );
@@ -1221,6 +1260,7 @@ void
 FileSystemModel::initGatherer()
 {
     if (!_imp->gatherer) {
+        // scoped_ptr
         _imp->gatherer.reset( new FileGathererThread( shared_from_this() ) );
         assert(_imp->gatherer);
         QObject::connect( _imp->gatherer.get(), SIGNAL(directoryLoaded(QString)), this, SLOT(onDirectoryLoadedByGatherer(QString)) );
@@ -1341,7 +1381,7 @@ FileSystemModel::getItem(const QModelIndex &index) const
 
 struct FileGathererThreadPrivate
 {
-    boost::weak_ptr<FileSystemModel> model;
+    FileSystemModelWPtr model;
     bool mustQuit;
     mutable QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
@@ -1490,6 +1530,11 @@ struct WorkingSetter
 void
 FileGathererThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         {
             WorkingSetter working( _imp.get() );
@@ -1544,7 +1589,7 @@ isVideoFileExtension(const std::string& ext)
     return false;
 }
 
-typedef std::list< std::pair< SequenceParsing::SequenceFromFilesPtr, QFileInfo > > FileSequences;
+typedef std::list<std::pair<SequenceParsing::SequenceFromFilesPtr, QFileInfo > > FileSequences;
 
 #define KERNEL_INCR() \
     switch (viewOrder) \
@@ -1652,7 +1697,7 @@ FileGathererThread::gatheringKernel(const FileSystemItemPtr& item)
             }
 
             if (!foundMatchingSequence) {
-                SequenceParsing::SequenceFromFilesPtr newSequence( new SequenceParsing::SequenceFromFiles(fileContent, true) );
+                SequenceParsing::SequenceFromFilesPtr newSequence = boost::make_shared<SequenceParsing::SequenceFromFiles>(fileContent, true);
                 sequences.push_back( std::make_pair(newSequence, all[i]) );
             }
         }

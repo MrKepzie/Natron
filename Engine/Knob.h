@@ -308,7 +308,7 @@ public:
 
 protected:
     /**
-     * @brief Deletes this knob permanantly
+     * @brief Deletes this knob permanently
      **/
     virtual void deleteKnob() = 0;
 
@@ -2173,9 +2173,6 @@ private:
         }
     };
 
-
-
-
     // Used only on render clones to cache the result of getValue/getValueAtTime so it stays
     // consistant throughout a render.
     boost::scoped_ptr<ValuesCacheMap> _valuesCache;
@@ -2365,8 +2362,8 @@ public:
     }
 
 
-    const std::vector< KnobIPtr > & getKnobs() const WARN_UNUSED_RETURN;
-    std::vector< KnobIPtr >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
+    const std::vector<KnobIPtr> & getKnobs() const WARN_UNUSED_RETURN;
+    std::vector<KnobIPtr> getKnobs_mt_safe() const WARN_UNUSED_RETURN;
 
     void refreshAfterTimeChange(bool isPlayback, TimeValue time);
 

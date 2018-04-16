@@ -125,7 +125,7 @@ Timer::printAsTime(const double timeInSeconds,
     double timeRemain = timeInSeconds;
 
     if (timeRemain >= day) {
-        double daysRemaining = timeInSeconds / day;
+        double daysRemaining = timeRemain / day;
         double floorDays = std::floor(daysRemaining);
         if (floorDays > 0) {
             ret.append( ( floorDays > 1 ? tr("%1 days") : tr("%1 day") ).arg( QString::number(floorDays) ) );
@@ -176,13 +176,13 @@ Timer::printAsTime(const double timeInSeconds,
 } // Timer::printAsTime
 
 Timer::Timer ()
-: playState (ePlayStateRunning),
-_frequency(getPerformanceFrequency()),
-_spf (1 / 24.0),
-_timingError (0),
-_framesSinceLastFpsFrame (0),
-_actualFrameRate (0),
-_mutex(new QMutex)
+    : playState (ePlayStateRunning)
+    , _frequency(getPerformanceFrequency())
+    , _spf (1 / 24.0)
+    , _timingError (0)
+    , _framesSinceLastFpsFrame (0)
+    , _actualFrameRate (0)
+    , _mutex()
 {
 
     _lastFrameTime = getTimestampInSeconds();
@@ -191,7 +191,6 @@ _mutex(new QMutex)
 
 Timer::~Timer()
 {
-    delete _mutex;
 }
 
 void
@@ -214,7 +213,7 @@ Timer::waitUntilNextFrameIsDue ()
 
     double spf;
     {
-        QMutexLocker l(_mutex);
+        QMutexLocker l(&_mutex);
         spf = _spf;
     }
     //
@@ -279,7 +278,7 @@ Timer::waitUntilNextFrameIsDue ()
         double curActualFrameRate;
         double desiredFrameRate;
         {
-            QMutexLocker l(_mutex);
+            QMutexLocker l(&_mutex);
             if (actualFrameRate != _actualFrameRate) {
                 _actualFrameRate = actualFrameRate;
             }
@@ -302,7 +301,7 @@ Timer::waitUntilNextFrameIsDue ()
 double
 Timer::getActualFrameRate() const
 {
-    QMutexLocker l(_mutex);
+    QMutexLocker l(&_mutex);
 
     return _actualFrameRate;
 }
@@ -310,7 +309,7 @@ Timer::getActualFrameRate() const
 void
 Timer::setDesiredFrameRate (double fps)
 {
-    QMutexLocker l(_mutex);
+    QMutexLocker l(&_mutex);
 
     _spf = 1 / fps;
 }
@@ -318,7 +317,7 @@ Timer::setDesiredFrameRate (double fps)
 double
 Timer::getDesiredFrameRate() const
 {
-    QMutexLocker l(_mutex);
+    QMutexLocker l(&_mutex);
 
     return 1.f / _spf;
 }

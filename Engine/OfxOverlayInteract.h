@@ -46,13 +46,13 @@ class OfxOverlayInteract
 {
 public:
 
-    OfxOverlayInteract(OfxImageEffectInstance &v,
+    OfxOverlayInteract(OfxImageEffectInstance* v,
                        int bitDepthPerComponent,
                        bool hasAlpha);
 
     OfxOverlayInteract(const KnobIPtr& knob,
-                        OFX::Host::Interact::Descriptor &desc,
-                        OfxImageEffectInstance &v);
+                        OFX::Host::Interact::Descriptor* desc,
+                        OfxImageEffectInstance* v);
 
     virtual ~OfxOverlayInteract()
     {
@@ -82,6 +82,14 @@ public:
     {
         OverlayInteractBase::getPixelScale(xScale, yScale);
     }
+
+#ifdef OFX_EXTENSIONS_NATRON
+    // hooks to live kOfxInteractPropScreenPixelRatio in the property set
+    virtual double getScreenPixelRatio() const OVERRIDE FINAL
+    {
+        return OverlayInteractBase::getScreenPixelRatio();
+    }
+#endif
 
     virtual void getBackgroundColour(double &r,
                                      double &g,

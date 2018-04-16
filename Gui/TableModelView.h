@@ -32,6 +32,7 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/make_shared.hpp>
 #endif
 
 
@@ -44,6 +45,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPixmap>
 #include <QStyleOption>
 #include <QtCore/QMetaType>
+#include <QtCore/QSize>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -62,6 +64,8 @@ class TableItem : public boost::enable_shared_from_this<TableItem>
     friend class TableModel;
     friend class TableView;
     friend struct TableItemPrivate;
+
+    struct MakeSharedEnabler;
 
     TableItem(const TableModelPtr& model);
 
@@ -303,8 +307,13 @@ public:
     {
     }
 
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     virtual QWidget * createEditor(QVariant::Type type, QWidget *parent) const OVERRIDE FINAL;
     virtual QByteArray valuePropertyName(QVariant::Type type) const OVERRIDE FINAL;
+#else
+    virtual QWidget * createEditor(int userType, QWidget *parent) const OVERRIDE FINAL;
+    virtual QByteArray valuePropertyName(int userType) const OVERRIDE FINAL;
+#endif
 };
 
 
@@ -445,9 +454,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
     friend class TableItem;
     friend class TableView;
 
+    struct MakeSharedEnabler;
+
 public:
-
-
     enum TableModelTypeEnum
     {
         // Each row is a top-level item
@@ -458,16 +467,11 @@ public:
     };
 
 protected:
-    
+    // used by boost::make_shared
     TableModel(int cols, TableModelTypeEnum type);
 
 public:
-
-   
-    static TableModelPtr create(int columns, TableModelTypeEnum type)
-    {
-        return TableModelPtr(new TableModel(columns, type));
-    }
+    static TableModelPtr create(int columns, TableModelTypeEnum type);
 
     virtual ~TableModel();
     

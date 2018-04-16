@@ -28,7 +28,7 @@
 #include <set>
 #include <sstream>
 
-
+#include <boost/make_shared.hpp>
 
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
@@ -167,14 +167,14 @@ TrackerHelper::trackMarker(const TrackMarkerPtr& mark,
                  TimeValue frameStep,
                  const ViewerNodePtr& viewer)
 {
-    std::list<TrackMarkerPtr > markers;
+    std::list<TrackMarkerPtr> markers;
     markers.push_back(mark);
     trackMarkers(markers, start, end, frameStep, viewer);
 }
 
 
 void
-TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
+TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr>& markers,
                              TimeValue start,
                              TimeValue end,
                              TimeValue frameStep,
@@ -219,8 +219,8 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
     /// The accessor and its cache is local to a track operation, it is wiped once the whole sequence track is finished.
     TrackerFrameAccessorPtr accessor = TrackerFrameAccessor::create(trackerNodeSource, trackerNodeMask, maskImagePlane, maskPlaneIndex, enabledChannels, formatHeight);
-    boost::shared_ptr<mv::AutoTrack> trackContext( new mv::AutoTrack( accessor.get() ) );
-    std::vector<TrackMarkerAndOptionsPtr > trackAndOptions;
+    boost::shared_ptr<mv::AutoTrack> trackContext = boost::make_shared<mv::AutoTrack>( accessor.get() );
+    std::vector<TrackMarkerAndOptionsPtr> trackAndOptions;
     mv::TrackRegionOptions mvOptions;
     /*
      Get the global parameters for the LivMV track: pre-blur sigma, No iterations, normalized intensities, etc...
@@ -234,7 +234,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
      - t->mvMarker will contain the marker that evolves throughout the tracking
      */
     int trackIndex = 0;
-    for (std::list<TrackMarkerPtr >::const_iterator it = markers.begin(); it != markers.end(); ++it, ++trackIndex) {
+    for (std::list<TrackMarkerPtr>::const_iterator it = markers.begin(); it != markers.end(); ++it, ++trackIndex) {
 
         if (autoKeyingOnEnabledParamEnabled) {
             (*it)->setEnabledAtTime(start, true);
@@ -408,7 +408,12 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
     /*
      Launch tracking in the scheduler thread.
      */
+
+#ifdef BOOST_NO_CXX11_VARIADIC_TEMPLATES
     boost::shared_ptr<TrackArgs> args( new TrackArgs(start, end, frameStep, trackerNodeSource->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled) );
+#else
+    boost::shared_ptr<TrackArgs> args = boost::make_shared<TrackArgs>(start, end, frameStep, trackerNodeSource->getApp()->getTimeLine(), viewer, trackContext, accessor, trackAndOptions, formatWidth, formatHeight, autoKeyingOnEnabledParamEnabled);
+#endif
     _imp->scheduler->track(args);
 } // TrackerHelper::trackMarkers
 

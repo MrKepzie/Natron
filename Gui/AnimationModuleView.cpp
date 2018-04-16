@@ -153,6 +153,9 @@ AnimationModuleView::resizeGL(int width,
         return;
     }
 
+    if (width == 0) {
+        width = 1;
+    }
     if (height == 0) {
         height = 1;
     }
@@ -378,7 +381,17 @@ AnimationModuleView::getPixelScale(double & xScale, double & yScale) const
     yScale = _imp->curveEditorZoomContext.screenPixelHeight();
 }
 
-
+#ifdef OFX_EXTENSIONS_NATRON
+double
+AnimationModuleView::getScreenPixelRatio() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    return windowHandle()->devicePixelRatio()
+#else
+    return 1.;
+#endif
+}
+#endif
 
 RectD
 AnimationModuleView::getViewportRect() const
@@ -620,7 +633,7 @@ AnimationModuleView::onCenterOnSelectedCurvesActionTriggered()
 
 void
 AnimationModuleView::centerOnItemsInternal(const std::vector<CurveGuiPtr>& curves,
-                                           const std::vector<NodeAnimPtr >& nodes,
+                                           const std::vector<NodeAnimPtr>& nodes,
                                            const std::vector<TableItemAnimPtr>& tableItems)
 {
     RectD ret;
@@ -682,7 +695,7 @@ AnimationModuleView::centerOnAllItems()
     AnimationModuleBasePtr model = _imp->_model.lock();
 
     std::vector<CurveGuiPtr> allVisibleCurves;
-    std::vector<NodeAnimPtr > allNodes;
+    std::vector<NodeAnimPtr> allNodes;
     std::vector<TableItemAnimPtr> allTableItems;
 
     model->getSelectionModel()->getAllItems(false, 0, &allNodes, &allTableItems);
@@ -696,8 +709,8 @@ void
 AnimationModuleView::centerOnSelection()
 {
     AnimationModuleBasePtr model = _imp->_model.lock();
-    std::vector<CurveGuiPtr > selectedCurves =  _imp->getSelectedCurves();
-    const std::list<NodeAnimPtr >& selectedNodes = model->getSelectionModel()->getCurrentNodesSelection();
+    std::vector<CurveGuiPtr> selectedCurves =  _imp->getSelectedCurves();
+    const std::list<NodeAnimPtr>& selectedNodes = model->getSelectionModel()->getCurrentNodesSelection();
     const std::list<TableItemAnimPtr>& selectedTableItems = model->getSelectionModel()->getCurrentTableItemsSelection();
 
     if ( selectedCurves.empty() && selectedNodes.empty() && selectedTableItems.empty() ) {

@@ -39,23 +39,19 @@ class KnobAnim : public QObject, public AnimItemBase
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    struct MakeSharedEnabler;
+
+    // used by make_shared
     KnobAnim(const AnimationModuleBasePtr& model,
              const KnobsHolderAnimBasePtr& holder,
              QTreeWidgetItem *parentItem,
              const KnobIPtr& knob);
 
 public:
-
-
     static KnobAnimPtr create(const AnimationModuleBasePtr& model,
                               const KnobsHolderAnimBasePtr& holder,
                               QTreeWidgetItem *parentItem,
-                              const KnobIPtr& knob)
-    {
-        KnobAnimPtr ret(new KnobAnim(model, holder, parentItem, knob));
-        ret->initialize();
-        return ret;
-    }
+                              const KnobIPtr& knob);
 
     virtual ~KnobAnim();
 

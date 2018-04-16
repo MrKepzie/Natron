@@ -58,21 +58,16 @@ class AnimationModule
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    struct MakeSharedEnabler;
 
     AnimationModule(Gui *gui,
                     AnimationModuleEditor* editor,
                     const TimeLinePtr &timeline);
 
 public:
-
     static AnimationModulePtr create(Gui *gui,
                                      AnimationModuleEditor* editor,
-                                     const TimeLinePtr &timeline)
-    {
-        AnimationModulePtr ret(new AnimationModule(gui, editor, timeline));
-        ret->ensureSelectionModel();
-        return ret;
-    }
+                                     const TimeLinePtr &timeline);
 
     virtual ~AnimationModule();
 
@@ -105,7 +100,7 @@ public:
 
     /// Overriden from AnimationModuleSelectionProvider
     virtual bool findItem(QTreeWidgetItem* treeItem, AnimatedItemTypeEnum *type, KnobAnimPtr* isKnob, TableItemAnimPtr* isTableItem, NodeAnimPtr* isNodeItem, ViewSetSpec* view, DimSpec* dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void getTopLevelNodes(bool onlyVisible, std::vector<NodeAnimPtr >* nodes) const OVERRIDE FINAL;
+    virtual void getTopLevelNodes(bool onlyVisible, std::vector<NodeAnimPtr>* nodes) const OVERRIDE FINAL;
     virtual AnimationModuleSelectionModelPtr getSelectionModel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /// Overriden from AnimationModuleBase
@@ -128,7 +123,7 @@ public:
     /**
      * @brief Given the node, finds what nodes should be inserted as children of this node
      **/
-    std::vector<NodeAnimPtr > getChildrenNodes(const NodeAnimPtr& node) const;
+    std::vector<NodeAnimPtr> getChildrenNodes(const NodeAnimPtr& node) const;
 
     NodeAnimPtr getNearestTimeNodeFromOutputsInternal(const NodePtr& node) const;
     NodeAnimPtr getNearestTimeNodeFromOutputs(const NodeAnimPtr& node) const;

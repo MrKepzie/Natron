@@ -318,7 +318,7 @@ public:
         boost::shared_ptr<BezierCPSerialization> featherPoint;
     };
 
-    std::list< ControlPoint > _controlPoints;
+    std::list<ControlPoint> _controlPoints;
 
     bool _closed;
     bool _isOpenBezier;
@@ -456,7 +456,7 @@ class NodeCollectionSerialization
 public:
 
     // The list of all nodes in the collection
-    std::list< NodeSerializationPtr > _serializedNodes;
+    std::list<NodeSerializationPtr> _serializedNodes;
 
 
     NodeCollectionSerialization()
@@ -468,7 +468,7 @@ public:
         _serializedNodes.clear();
     }
 
-    const std::list< NodeSerializationPtr > & getNodesSerialization() const
+    const std::list<NodeSerializationPtr> & getNodesSerialization() const
     {
         return _serializedNodes;
     }
@@ -487,7 +487,7 @@ public:
         ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
 
         for (int i = 0; i < nodesCount; ++i) {
-            NodeSerializationPtr s(new NodeSerialization);
+            NodeSerializationPtr s = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("item", *s);
             _serializedNodes.push_back(s);
         }
@@ -575,7 +575,7 @@ SERIALIZATION_NAMESPACE::Compat::BezierSerialization::serialize(Archive & ar, co
         cp.toSerialization(&controlPoint.innerPoint);
 
         if (fp != cp) {
-            controlPoint.featherPoint.reset(new BezierCPSerialization);
+            controlPoint.featherPoint = boost::make_shared<BezierCPSerialization>();
             fp.toSerialization(controlPoint.featherPoint.get());
         }
 
@@ -629,28 +629,28 @@ SERIALIZATION_NAMESPACE::Compat::RotoDrawableItemSerialization::serialize(Archiv
                                                                                                    );
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(RotoItemSerialization);
     if (version < ROTO_DRAWABLE_ITEM_CHANGES_TO_LIST) {
-        KnobSerializationPtr activated(new KnobSerialization);
+        KnobSerializationPtr activated = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("Activated", *activated);
         _knobs.push_back(activated);
-        KnobSerializationPtr opacity(new KnobSerialization);
+        KnobSerializationPtr opacity = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("Opacity", *opacity);
         _knobs.push_back(opacity);
-        KnobSerializationPtr feather(new KnobSerialization);
+        KnobSerializationPtr feather = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("Feather", *feather);
         _knobs.push_back(feather);
-        KnobSerializationPtr falloff(new KnobSerialization);
+        KnobSerializationPtr falloff = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("FallOff", *falloff);
         _knobs.push_back(falloff);
         if (version < ROTO_DRAWABLE_ITEM_REMOVES_INVERTED) {
-            KnobSerializationPtr inverted(new KnobSerialization);
+            KnobSerializationPtr inverted = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Inverted", *inverted);
             _knobs.push_back(inverted);
         }
         if (version >= ROTO_DRAWABLE_ITEM_INTRODUCES_COMPOSITING) {
-            KnobSerializationPtr color(new KnobSerialization);
+            KnobSerializationPtr color = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Color", *color);
             _knobs.push_back(color);
-            KnobSerializationPtr comp(new KnobSerialization);
+            KnobSerializationPtr comp = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("CompOP", *comp);
             _knobs.push_back(comp);
         }
@@ -658,7 +658,7 @@ SERIALIZATION_NAMESPACE::Compat::RotoDrawableItemSerialization::serialize(Archiv
         int nKnobs;
         ar & ::boost::serialization::make_nvp("NbItems", nKnobs);
         for (int i = 0; i < nKnobs; ++i) {
-            KnobSerializationPtr k(new KnobSerialization);
+            KnobSerializationPtr k = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("Item", *k);
             _knobs.push_back(k);
         }
@@ -693,15 +693,15 @@ SERIALIZATION_NAMESPACE::Compat::RotoLayerSerialization::serialize(Archive & ar,
             ar & ::boost::serialization::make_nvp("Type", type);
         }
         if (type == 0) {
-            boost::shared_ptr<Compat::BezierSerialization> b(new Compat::BezierSerialization);
+            boost::shared_ptr<Compat::BezierSerialization> b = boost::make_shared<Compat::BezierSerialization>();
             ar & ::boost::serialization::make_nvp("Item", *b);
             children.push_back(b);
         } else if (type == 1) {
-            boost::shared_ptr<Compat::RotoStrokeItemSerialization> b(new Compat::RotoStrokeItemSerialization);
+            boost::shared_ptr<Compat::RotoStrokeItemSerialization> b = boost::make_shared<Compat::RotoStrokeItemSerialization>();
             ar & ::boost::serialization::make_nvp("Item", *b);
             children.push_back(b);
         } else {
-            boost::shared_ptr<Compat::RotoLayerSerialization> l(new Compat::RotoLayerSerialization);
+            boost::shared_ptr<Compat::RotoLayerSerialization> l = boost::make_shared<Compat::RotoLayerSerialization>();
             ar & ::boost::serialization::make_nvp("Item", *l);
             children.push_back(l);
         }
@@ -725,9 +725,9 @@ SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization::serialize(Archive 
         ar & ::boost::serialization::make_nvp("CurveY", y);
         ar & ::boost::serialization::make_nvp("CurveP", p);
         PointCurves subStroke;
-        subStroke.x.reset(new CurveSerialization);
-        subStroke.y.reset(new CurveSerialization);
-        subStroke.pressure.reset(new CurveSerialization);
+        subStroke.x = boost::make_shared<CurveSerialization>();
+        subStroke.y = boost::make_shared<CurveSerialization>();
+        subStroke.pressure = boost::make_shared<CurveSerialization>();
         x.toSerialization(subStroke.x.get());
         y.toSerialization(subStroke.y.get());
         p.toSerialization(subStroke.pressure.get());
@@ -743,9 +743,9 @@ SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization::serialize(Archive 
             ar & ::boost::serialization::make_nvp("CurveY", y);
             ar & ::boost::serialization::make_nvp("CurveP", p);
             PointCurves subStroke;
-            subStroke.x.reset(new CurveSerialization);
-            subStroke.y.reset(new CurveSerialization);
-            subStroke.pressure.reset(new CurveSerialization);
+            subStroke.x = boost::make_shared<CurveSerialization>();
+            subStroke.y = boost::make_shared<CurveSerialization>();
+            subStroke.pressure = boost::make_shared<CurveSerialization>();
             x.toSerialization(subStroke.x.get());
             y.toSerialization(subStroke.y.get());
             p.toSerialization(subStroke.pressure.get());
@@ -1435,11 +1435,11 @@ SERIALIZATION_NAMESPACE::GroupKnobSerialization::serialize(Archive & ar, const u
         ar & ::boost::serialization::make_nvp("Type", type);
 
         if (type == "Group") {
-            boost::shared_ptr<GroupKnobSerialization> knob(new GroupKnobSerialization);
+            boost::shared_ptr<GroupKnobSerialization> knob = boost::make_shared<GroupKnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *knob);
             _children.push_back(knob);
         } else {
-            KnobSerializationPtr knob(new KnobSerialization);
+            KnobSerializationPtr knob = boost::make_shared<KnobSerialization>();
             ar & ::boost::serialization::make_nvp("item", *knob);
             _children.push_back(knob);
         }
@@ -1500,7 +1500,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
     int nbKnobs;
     ar & ::boost::serialization::make_nvp("KnobsCount", nbKnobs);
     for (int i = 0; i < nbKnobs; ++i) {
-        KnobSerializationPtr ks(new KnobSerialization);
+        KnobSerializationPtr ks = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("item", *ks);
         _knobsValues.push_back(ks);
     }
@@ -1570,7 +1570,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         ar & ::boost::serialization::make_nvp("HasRotoContext", hasRotoContext);
         if (hasRotoContext) {
             Compat::RotoContextSerialization rotoContext;
-            KnobItemsTableSerializationPtr tableModel(new KnobItemsTableSerialization);
+            KnobItemsTableSerializationPtr tableModel = boost::make_shared<KnobItemsTableSerialization>();
             ar & ::boost::serialization::make_nvp("RotoContext", rotoContext);
             rotoContext.convertRotoContext(tableModel.get());
             _tables.push_back(tableModel);
@@ -1582,7 +1582,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
             if (hasTrackerContext) {
 
                 Compat::TrackerContextSerialization trackerContext;
-                KnobItemsTableSerializationPtr tableModel(new KnobItemsTableSerialization);
+                KnobItemsTableSerializationPtr tableModel = boost::make_shared<KnobItemsTableSerialization>();
                 ar & boost::serialization::make_nvp("TrackerContext", trackerContext);
                 trackerContext.convertTrackerContext(tableModel.get());
                 _tables.push_back(tableModel);
@@ -1622,7 +1622,7 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         ar & ::boost::serialization::make_nvp("Children", nodesCount);
 
         for (int i = 0; i < nodesCount; ++i) {
-            NodeSerializationPtr s(new NodeSerialization);
+            NodeSerializationPtr s = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("item", *s);
             _children.push_back(s);
         }
@@ -1736,7 +1736,7 @@ SERIALIZATION_NAMESPACE::ProjectSerialization::serialize(Archive & ar,
         int nodesCount;
         ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
         for (int i = 0; i < nodesCount; ++i) {
-            NodeSerializationPtr ns(new NodeSerialization);
+            NodeSerializationPtr ns = boost::make_shared<NodeSerialization>();
             ar & ::boost::serialization::make_nvp("item", *ns);
             _nodes.push_back(ns);
         }
@@ -1750,7 +1750,7 @@ SERIALIZATION_NAMESPACE::ProjectSerialization::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("ProjectKnobsCount", knobsCount);
 
     for (int i = 0; i < knobsCount; ++i) {
-        KnobSerializationPtr ks(new KnobSerialization);
+        KnobSerializationPtr ks = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("item", *ks);
         _projectKnobs.push_back(ks);
     }
@@ -1795,7 +1795,7 @@ void SERIALIZATION_NAMESPACE::PythonPanelSerialization::serialize(Archive & ar,
     ar & ::boost::serialization::make_nvp("NumParams", nKnobs);
 
     for (int i = 0; i < nKnobs; ++i) {
-        KnobSerializationPtr k(new KnobSerialization);
+        KnobSerializationPtr k = boost::make_shared<KnobSerialization>();
         ar & ::boost::serialization::make_nvp("item", *k);
         knobs.push_back(k);
     }

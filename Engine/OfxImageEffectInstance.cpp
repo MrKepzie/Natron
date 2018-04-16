@@ -181,7 +181,7 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
     assert(type);
     assert(format);
     std::string message = string_format(format, args);
-    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     assert(effect);
 
     if (effect) {
@@ -646,7 +646,7 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
     knob->setSpacingBetweenItems( descriptor.getProperties().getIntProperty(kOfxParamPropLayoutPadWidth) );
 
     if ( knob->isAnimationEnabled() ) {
-        boost::shared_ptr<KnobSignalSlotHandler> handler = knob->getSignalSlotHandler();
+        KnobSignalSlotHandlerPtr handler = knob->getSignalSlotHandler();
         if (handler) {
             QObject::connect( handler.get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), ptk,
                               SLOT(onMustRefreshGuiTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum)) );
@@ -728,7 +728,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
         OfxPageInstance* isPage = dynamic_cast<OfxPageInstance*>(*it);
         if (isPage) {
             const std::map<int, OFX::Host::Param::Instance*>& children = isPage->getChildren();
-            PageOrderedPtr pageData( new PageOrdered() );
+            PageOrderedPtr pageData = boost::make_shared<PageOrdered>();
             pageData->page = toKnobPage(associatedKnob);
             assert(pageData->page);
             std::map<OfxParamToKnob*, int> childrenList;
@@ -783,7 +783,7 @@ OfxImageEffectInstance::addParamsToTheirParents()
     } else {
         KnobPagePtr page = effect->createKnob<KnobPage>("settingsPage");
         page->setLabel(tr("Settings"));
-        PageOrderedPtr pageData( new PageOrdered() );
+        PageOrderedPtr pageData = boost::make_shared<PageOrdered>();
         pageData->page = page;
         finalPages.push_back(pageData);
         mainPage = finalPages.begin();

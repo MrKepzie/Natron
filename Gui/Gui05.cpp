@@ -36,6 +36,9 @@
 #include <QGraphicsScene>
 #include <QUndoGroup>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/Project.h"
@@ -161,7 +164,12 @@ Gui::setupUi()
      */
     QMetaObject::connectSlotsByName(this);
 
-    appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        appPTR->setOFXHostHandle( getApp()->getOfxHostOSHandle() );
+    }
 } // setupUi
 
 void
@@ -238,7 +246,7 @@ Gui::createGroupGui(const NodePtr & group,
     nodeGraph->setObjectName( QString::fromUtf8( group->getLabel().c_str() ) );
     _imp->_groups.push_back(nodeGraph);
     
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization);
     bool showSubGraph = args.getPropertyUnsafe<bool>(kCreateNodeArgsPropSubGraphOpened);
     if ( showSubGraph && where && !serialization ) {
         where->appendTab(nodeGraph, nodeGraph);

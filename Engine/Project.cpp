@@ -67,6 +67,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/StrUtils.h"
 #include "Global/GitVersion.h"
 #include "Global/FStreamsSupport.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -375,7 +378,12 @@ Project::loadProjectInternal(const QString & pathIn,
 
     ///Process all events before flagging that we're no longer loading the project
     ///to avoid multiple renders being called because of reshape events of viewers
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
 
     return ret;
 } // Project::loadProjectInternal
@@ -652,7 +660,7 @@ Project::onAutoSaveTimerTriggered()
     bool canAutoSave = tp->activeThreadCount() < tp->maxThreadCount() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
-        boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);
+        boost::shared_ptr<QFutureWatcher<void> > watcher = boost::make_shared<QFutureWatcher<void> >();
         QObject::connect( watcher.get(), SIGNAL(finished()), this, SLOT(onAutoSaveFutureFinished()) );
         watcher->setFuture( QtConcurrent::run(this, &Project::autoSave) );
         _imp->autoSaveFutures.push_back(watcher);
@@ -923,8 +931,8 @@ Project::initializeKnobs()
 
     {
         KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace8u");
-        param->setLabel(tr("8-Bit Colorspace"));
-        param->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
+        param->setLabel(tr("8-Bit LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert to 8-bit image data if an effect cannot process floating-point images.") );
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(1);
@@ -935,8 +943,8 @@ Project::initializeKnobs()
 
     {
         KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace16u");
-        param->setLabel(tr("16-Bit Colorspace"));
-        param->setHintToolTip( tr("Defines the color-space in which 16-bit integer images are assumed to be by default.") );
+        param->setLabel(tr("16-Bit LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert to 16-bit image data if an effect cannot process floating-point images.") );
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(2);
@@ -947,8 +955,8 @@ Project::initializeKnobs()
 
     {
         KnobChoicePtr param = createKnob<KnobChoice>("defaultColorSpace32f");
-        param->setLabel(tr("32-Bit f.p Colorspace "));
-        param->setHintToolTip( tr("Defines the color-space in which 32-bit floating point images are assumed to be by default.") );
+        param->setLabel(tr("32-Bit Floating Point LUT"));
+        param->setHintToolTip( tr("Defines the 1D LUT used to convert from 32-bit floating-point image data if an effect cannot process floating-point images.") );
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(0);
@@ -1904,6 +1912,8 @@ public:
     }
 };
 
+typedef boost::shared_ptr<ResetWatcherArgs> ResetWatcherArgsPtr;
+
 void
 Project::reset(bool aboutToQuit, bool blocking)
 {
@@ -1914,7 +1924,7 @@ Project::reset(bool aboutToQuit, bool blocking)
     }
 
     if (!blocking) {
-        boost::shared_ptr<ResetWatcherArgs> args( new ResetWatcherArgs() );
+        boost::shared_ptr<ResetWatcherArgs> args = boost::make_shared<ResetWatcherArgs>();
         args->aboutToQuit = aboutToQuit;
         if ( !quitAnyProcessingForAllNodes(this, args) ) {
             doResetEnd(aboutToQuit);
@@ -2009,7 +2019,7 @@ Project::doResetEnd(bool aboutToQuit)
 
 bool
 Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
-                                      const WatcherCallerArgsPtr& args)
+                                      const GenericWatcherCallerArgsPtr& args)
 {
     NodesList nodesToWatch;
 
@@ -2017,8 +2027,8 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
     if ( nodesToWatch.empty() ) {
         return false;
     }
-    boost::shared_ptr<NodeRenderWatcher> renderWatcher( new NodeRenderWatcher(nodesToWatch) );
-    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,WatcherCallerArgsPtr)), Qt::UniqueConnection);
+    NodeRenderWatcherPtr renderWatcher = boost::make_shared<NodeRenderWatcher>(nodesToWatch);
+    QObject::connect(renderWatcher.get(), SIGNAL(taskFinished(int,GenericWatcherCallerArgsPtr)), this, SLOT(onQuitAnyProcessingWatcherTaskFinished(int,GenericWatcherCallerArgsPtr)), Qt::UniqueConnection);
     ProjectPrivate::RenderWatcher p;
     p.receiver = receiver;
     p.watcher = renderWatcher;
@@ -2030,7 +2040,7 @@ Project::quitAnyProcessingForAllNodes(AfterQuitProcessingI* receiver,
 
 void
 Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
-                                                const WatcherCallerArgsPtr& args)
+                                                const GenericWatcherCallerArgsPtr& args)
 {
     NodeRenderWatcher* watcher = dynamic_cast<NodeRenderWatcher*>( sender() );
 
@@ -2060,7 +2070,7 @@ Project::onQuitAnyProcessingWatcherTaskFinished(int taskID,
 }
 
 void
-Project::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+Project::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
     ResetWatcherArgs* inArgs = dynamic_cast<ResetWatcherArgs*>( args.get() );
 
@@ -2717,7 +2727,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
                         continue;
                     }
                 } else {
-                    state.reset( new SERIALIZATION_NAMESPACE::NodeSerialization );
+                    state = boost::make_shared<SERIALIZATION_NAMESPACE::NodeSerialization>();
                     (*it)->toSerialization(state.get());
                 }
                 
@@ -2741,7 +2751,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
     }
 
     // Serialize project settings
-    std::vector< KnobIPtr > knobs = getKnobs_mt_safe();
+    std::vector<KnobIPtr> knobs = getKnobs_mt_safe();
 
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
 
@@ -2762,7 +2772,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
         }
 
 
-        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer( new SERIALIZATION_NAMESPACE::KnobSerialization );
+        SERIALIZATION_NAMESPACE::KnobSerializationPtr newKnobSer = boost::make_shared<SERIALIZATION_NAMESPACE::KnobSerialization>();
         knobs[i]->toSerialization(newKnobSer.get());
         if (newKnobSer->_mustSerialize) {
 

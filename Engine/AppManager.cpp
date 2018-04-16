@@ -54,6 +54,7 @@
 #include <sstream> // stringstream
 #include <locale>
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #if defined(Q_OS_LINUX)
 #include <sys/signal.h>
 #ifndef __USE_GNU
@@ -104,6 +105,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/PythonUtils.h"
 #include "Global/QtCompat.h"
 #include "Global/StrUtils.h"
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 
 #include "Engine/AddPlaneNode.h"
 #include "Engine/AppInstance.h"
@@ -157,7 +161,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "AppManagerPrivate.h" // include breakpad after Engine, because it includes /usr/include/AssertMacros.h on OS X which defines a check(x) macro, which conflicts with boost
 
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
 Q_DECLARE_METATYPE(QAbstractSocket::SocketState)
 #endif
 
@@ -408,6 +412,12 @@ AppManager::getPhysicalThreadCount()
     return _imp->physicalThreadCount;
 }
 
+int
+AppManager::getMaxThreadCount()
+{
+    return QThreadPool::globalInstance()->maxThreadCount();
+}
+
 AppManager::AppManager()
     : QObject()
     , _imp( new AppManagerPrivate() )
@@ -542,7 +552,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
 
 
     // Ensure Qt knows C-strings are UTF-8 before creating the QApplication for argv
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     // be forward compatible: source code is UTF-8, and Qt5 assumes UTF-8 by default
     QTextCodec::setCodecForCStrings( QTextCodec::codecForName("UTF-8") );
     QTextCodec::setCodecForTr( QTextCodec::codecForName("UTF-8") );
@@ -552,6 +562,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     // This needs to be done BEFORE creating qApp because
     // on Linux, X11 will create a context that would corrupt
     // the XUniqueContext created by Qt
+    // scoped_ptr
     _imp->renderingContextPool.reset( new GPUContextPool() );
     initializeOpenGLFunctionsOnce(true);
 
@@ -565,7 +576,7 @@ AppManager::loadFromArgs(const CLArgs& cl)
     _imp->commandLineArgsUtf8.resize(_imp->nArgs); // Qt may have reduced the numlber of args
 
 #ifdef QT_CUSTOM_THREADPOOL
-    // Set the global thread pool
+    // Set the global thread pool (pointed is owned and deleted by QThreadPool at exit)
     QThreadPool::setGlobalInstance(new ThreadPool);
 #endif
 
@@ -721,8 +732,10 @@ public:
     virtual ~QuitInstanceArgs() {}
 };
 
+typedef boost::shared_ptr<QuitInstanceArgs> QuitInstanceArgsPtr;
+
 void
-AppManager::afterQuitProcessingCallback(const WatcherCallerArgsPtr& args)
+AppManager::afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args)
 {
     QuitInstanceArgs* inArgs = dynamic_cast<QuitInstanceArgs*>( args.get() );
 
@@ -759,7 +772,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
             (*it)->quitAnyProcessing_blocking(false);
         }
     }
-    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
     args->instance = instance;
     afterQuitProcessingCallback(args);
 }
@@ -767,7 +780,7 @@ AppManager::quitNow(const AppInstancePtr& instance)
 void
 AppManager::quit(const AppInstancePtr& instance)
 {
-    boost::shared_ptr<QuitInstanceArgs> args(new QuitInstanceArgs);
+    QuitInstanceArgsPtr args = boost::make_shared<QuitInstanceArgs>();
 
     args->instance = instance;
     if ( !instance->getProject()->quitAnyProcessingForAllNodes(this, args) ) {
@@ -1184,10 +1197,7 @@ AppManager::initGui(const CLArgs& cl)
 bool
 AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
-
-
     setLoadingStatus( tr("Loading Plug-in Cache...") );
-
 
     ///Set host properties after restoring settings since it depends on the host name.
     try {
@@ -1648,7 +1658,9 @@ AppManager::onPluginLoaded(const PluginPtr& plugin)
 
     if ( plugin->getIsUserCreatable() ) {
         std::string hint = tr("Create an instance of %1").arg(QString::fromUtf8(pluginID.c_str())).toStdString();
-        getCurrentSettings()->addKeybind(shortcutGrouping, pluginID, pluginLabel, hint, modifiers, symbol);
+        // Keybinds to create nodes are not sensible to the shift modifier, due to
+        // different keyboard layouts (eg "." is shifted on French keyboard, not on QWERTY).
+        getCurrentSettings()->addKeybind(shortcutGrouping, pluginID, pluginLabel, hint, modifiers, symbol, eKeyboardModifierShift);
     }
 
     // If this plug-in has presets, add shortcuts as well
@@ -1696,6 +1708,7 @@ AppManager::loadBuiltinNodePlugins()
     ADD_PLUGIN_SAFE(DiskCacheNode);
     ADD_PLUGIN_SAFE(RotoPaint);
     ADD_PLUGIN_SAFE(RotoNode);
+    ADD_PLUGIN_SAFE(LayeredCompNode);
     ADD_PLUGIN_SAFE(RotoShapeRenderNode);
     ADD_PLUGIN_SAFE(PrecompNode);
     ADD_PLUGIN_SAFE(TrackerNode);
@@ -2555,7 +2568,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
         CreateNodeArgsPtr args(CreateNodeArgs::create(serialization->_pluginID, group));
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMinorVersion, 1);
-        args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, serialization);
+        args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr>(kCreateNodeArgsPropNodeSerialization, serialization);
         args->setProperty<bool>(kCreateNodeArgsPropSilent, true);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true); // also load deprecated plugins
@@ -2751,8 +2764,8 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSetSpec>("ViewSetSpec");
-    qRegisterMetaType<NodePtr >("NodePtr");
-    qRegisterMetaType<ViewerInstancePtr >("ViewerInstancePtr");
+    qRegisterMetaType<NodePtr>("NodePtr");
+    qRegisterMetaType<ViewerInstancePtr>("ViewerInstancePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
     qRegisterMetaType<DimIdx>("DimIdx");
     qRegisterMetaType<DimSpec>("DimSpec");
@@ -2761,7 +2774,7 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<ValueChangedReasonEnum>("ValueChangedReasonEnum");
     qRegisterMetaType<DimensionViewPair>("DimensionViewPair");
     qRegisterMetaType<PerDimViewKeyFramesMap>("PerDimViewKeyFramesMap");
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif
 }
@@ -2797,6 +2810,9 @@ AppManager::onQueueRendersChanged(bool queuingEnabled)
 int
 AppManager::exec()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
     return qApp->exec();
 }
 
@@ -3731,6 +3747,8 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
     PyObject* dict = PyModule_GetDict(mainModule);
 
+    PyErr_Clear();
+
     ///This is faster than PyRun_SimpleString since is doesn't call PyImport_AddModule("__main__")
     PyObject* v = PyRun_String(script.c_str(), Py_file_input, dict, 0);
     if (v) {
@@ -3766,7 +3784,12 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                 Py_DECREF(module_name);
 
                 if (pyth_module != NULL) {
-                    PyObject* pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+                    PyObject* pyth_func;
+                    if (!pyExcTraceback) {
+                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception_only");
+                    } else {
+                        pyth_func = PyObject_GetAttrString(pyth_module, "format_exception");
+                    }
                     Py_DECREF(pyth_module);
                     if (pyth_func && PyCallable_Check(pyth_func)) {
                         PyObject *pyth_val = PyObject_CallFunctionObjArgs(pyth_func, pyExcType, pyExcValue, pyExcTraceback, NULL);
@@ -3779,10 +3802,10 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
                             Py_DECREF(strList);
                             if (pyStr) {
                                 str = PyString_AsString(pyStr);
-                                Py_DECREF(pyStr);
                                 if (error && str) {
                                     *error += std::string(str) + '\n';
                                 }
+                                Py_DECREF(pyStr);
                             }
                         }
                     }
@@ -3792,7 +3815,7 @@ NATRON_PYTHON_NAMESPACE::interpretPythonScript(const std::string& script,
     }
 
     if (error) {
-        *error = NATRON_PYTHON_NAMESPACE::getPythonStdErr();
+        *error += NATRON_PYTHON_NAMESPACE::getPythonStdErr();
     }
     if (output) {
         *output = NATRON_PYTHON_NAMESPACE::getPythonStdOut();

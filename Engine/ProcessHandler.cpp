@@ -27,6 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QProcess>
 #include <QtNetwork/QLocalServer>
 #include <QtNetwork/QLocalSocket>
@@ -37,6 +38,9 @@
 #include <QtCore/QDir>
 #include <QtCore/QDebug>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
@@ -271,7 +275,7 @@ ProcessHandler::onProcessEnd(int exitCode,
 ProcessInputChannel::ProcessInputChannel(const QString & mainProcessServerName)
     : QThread()
     , _mainProcessServerName(mainProcessServerName)
-    , _backgroundOutputPipeMutex(new QMutex)
+    , _backgroundOutputPipeMutex()
     , _backgroundOutputPipe(0)
     , _backgroundIPCServer(0)
     , _backgroundInputPipe(0)
@@ -295,7 +299,6 @@ ProcessInputChannel::~ProcessInputChannel()
     }
 
     delete _backgroundIPCServer;
-    delete _backgroundOutputPipeMutex;
     delete _backgroundOutputPipe;
 }
 
@@ -303,7 +306,7 @@ void
 ProcessInputChannel::writeToOutputChannel(const QString & message)
 {
     {
-        QMutexLocker l(_backgroundOutputPipeMutex);
+        QMutexLocker l(&_backgroundOutputPipeMutex);
         _backgroundOutputPipe->write( ( message + QLatin1Char('\n') ).toUtf8() );
         _backgroundOutputPipe->flush();
     }
@@ -344,6 +347,11 @@ ProcessInputChannel::onInputChannelMessageReceived()
 void
 ProcessInputChannel::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         if ( _backgroundInputPipe->waitForReadyRead(100) ) {
             if ( onInputChannelMessageReceived() ) {
@@ -415,7 +423,12 @@ ProcessInputChannel::initialize()
 
     ///since we're still not returning the event loop, just process them manually in case
     ///Qt didn't caught the new connection pending.
-    QCoreApplication::processEvents();
+    {
+#ifdef DEBUG
+        boost_adaptbx::floating_point::exception_trapping trap(0);
+#endif
+        QCoreApplication::processEvents();
+    }
 } // ProcessInputChannel::initialize
 
 void

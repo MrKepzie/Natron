@@ -95,23 +95,20 @@ public:
         // there should be a single widget so the table is not cluttered
         eKnobLayoutTypeTableItemWidget
     };
+
 private:
+    struct MakeSharedEnabler;
 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
+    // used by make_shared
     KnobGui(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
 
     void initialize();
 
 
 public:
-
-    static KnobGuiPtr create(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container)
-    {
-        KnobGuiPtr ret(new KnobGui(knob,layoutType,container));
-        ret->initialize();
-        return ret;
-    }
+    static KnobGuiPtr create(const KnobIPtr& knob, KnobLayoutTypeEnum layoutType, KnobGuiContainerI* container);
 
     virtual ~KnobGui() OVERRIDE;
 

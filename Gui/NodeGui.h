@@ -44,6 +44,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QRectF>
 #include <QtCore/QMutex>
+#include <QtCore/QSize>
 #include <QGraphicsItem>
 #include <QDialog>
 #include <QtCore/QMutex>
@@ -269,7 +270,7 @@ public:
 
     void removeSettingsPanel();
 
-    boost::shared_ptr<QUndoStack> getUndoStack() const;
+    QUndoStackPtr getUndoStack() const;
 
     void discardGraphPointer();
 
@@ -392,7 +393,7 @@ public Q_SLOTS:
 
     void onRightClickMenuKnobPopulated();
 
-    void setColorFromGrouping();
+    bool getColorFromGrouping(QColor* color);
 
     void onHideInputsKnobValueChanged(bool hidden);
 
@@ -560,7 +561,7 @@ private:
     QGraphicsSimpleTextItem* _persistentMessage;
     NodeGraphRectItem* _stateIndicator;
     bool _mergeHintActive;
-    boost::shared_ptr<NodeGuiIndicator> _streamIssuesWarning;
+    NodeGuiIndicatorPtr _streamIssuesWarning;
     QGraphicsLineItem* _disabledTopLeftBtmRight;
     QGraphicsLineItem* _disabledBtmLeftTopRight;
     /*the graphical input arrows*/
@@ -590,8 +591,8 @@ private:
     boost::shared_ptr<QUndoStack> _undoStack; /*!< undo/redo stack*/
     mutable QMutex _overlayLockedMutex;
     bool _overlayLocked;
-    boost::shared_ptr<NodeGuiIndicator> _availableViewsIndicator;
-    boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
+    NodeGuiIndicatorPtr _availableViewsIndicator;
+    NodeGuiIndicatorPtr _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
     boost::shared_ptr<GroupKnobDialog> _activeNodeCustomModalDialog;

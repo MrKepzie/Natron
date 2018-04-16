@@ -38,6 +38,7 @@
 ///gui
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
+#include <QtCore/QtGlobal> // for Q_OS_*
 #include <QtCore/QDebug>
 #include <QtCore/QSettings>
 #include <QtCore/QFileInfo>
@@ -273,7 +274,7 @@ GuiApplicationManager::initializeQApp(int &argc,
 
 #ifdef DEBUG
     QLocale loc;
-#if QT_VERSION < 0x050000
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
     loc = QApplication::keyboardInputLocale();
 #else
     loc = QGuiApplication::inputMethod()->locale();

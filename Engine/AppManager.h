@@ -34,6 +34,7 @@
 #include "Global/KeySymbols.h"
 
 CLANG_DIAG_OFF(deprecated)
+#include <QtCore/QtGlobal> // for Q_OS_*
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
@@ -274,6 +275,7 @@ public:
 
     int getHardwareIdealThreadCount();
     int getPhysicalThreadCount();
+    int getMaxThreadCount(); //!<  actual number of threads in the thread pool (depends on application settings)
 
     void setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect);
     
@@ -580,7 +582,7 @@ private:
                          const QString& script);
 
 
-    virtual void afterQuitProcessingCallback(const WatcherCallerArgsPtr& args) OVERRIDE FINAL;
+    virtual void afterQuitProcessingCallback(const GenericWatcherCallerArgsPtr& args) OVERRIDE FINAL;
 
     bool loadInternal(const CLArgs& cl);
 

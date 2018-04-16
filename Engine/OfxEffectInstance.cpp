@@ -423,6 +423,7 @@ OfxEffectInstance::describePlugin()
         } // for each clip
     } // isFirstTimeLoadingPlugin
 
+    // scoped_ptr
     _imp->common->effect.reset( new OfxImageEffectInstance(ofxPlugin, *desc, mapContextToString(_imp->common->context), false) );
     assert(_imp->common->effect);
 
@@ -620,7 +621,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
     assert(_imp->common->effect);
     OfxPluginEntryPoint *overlayEntryPoint = _imp->common->effect->getOverlayInteractMainEntry();
     if (overlayEntryPoint) {
-        _imp->common->overlayInteract.reset( new OfxOverlayInteract(*_imp->common->effect, 8, true) );
+        _imp->common->overlayInteract = boost::make_shared<OfxOverlayInteract>(_imp->common->effect.get(), 8, true);
         RenderScale s(1.);
 
 
@@ -632,8 +633,8 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         _imp->common->overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
             KnobIPtr param;
-            const std::vector< KnobIPtr > & knobs = getKnobs();
-            for (std::vector< KnobIPtr >::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+            const std::vector<KnobIPtr> & knobs = getKnobs();
+            for (std::vector<KnobIPtr>::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
                 if ( (*it)->getOriginalName() == slaveParams[i] ) {
                     param = *it;
                     break;
@@ -674,7 +675,7 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         bool hasAlpha = false;
         getApp()->getViewersOpenGLContextFormat(&bitdepthPerComponent, &hasAlpha);
         interactDesc.describe(bitdepthPerComponent, hasAlpha);
-        OfxOverlayInteractPtr overlayInteract( new OfxOverlayInteract( knob, interactDesc, *effectInstance()) );
+        OfxOverlayInteractPtr overlayInteract = boost::make_shared<OfxOverlayInteract>( knob, &interactDesc, effectInstance());
         knob->setCustomInteract(overlayInteract);
         overlayInteract->createInstanceAction();
     }
@@ -746,14 +747,14 @@ OfxEffectInstance::isWriter() const
 }
 
 bool
-OfxEffectInstance::isGeneratorAndFilter() const
+OfxEffectInstance::isFilter() const
 {
     assert(_imp->common->context != eContextNone);
     const std::set<std::string> & contexts = effectInstance()->getPlugin()->getContexts();
-    std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
-    std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGeneral);
+    bool foundGeneral = contexts.find(kOfxImageEffectContextGeneral) != contexts.end();
+    bool foundFilter = contexts.find(kOfxImageEffectContextFilter) != contexts.end();
 
-    return foundGenerator != contexts.end() && foundGeneral != contexts.end();
+    return foundFilter || (foundGeneral && getNInputs() > 0);
 }
 
 /*group is a string as such:
@@ -1700,7 +1701,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     std::list<std::string> ofxPlanes;
 
     std::map<ImagePlaneDesc, ImagePtr> outputPlanesMap;
-    for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin();
+    for (std::list<std::pair<ImagePlaneDesc, ImagePtr> >::const_iterator it = args.outputPlanes.begin();
          it != args.outputPlanes.end(); ++it) {
         ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->first));
         outputPlanesMap[it->first] = it->second;
@@ -1890,7 +1891,7 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
             assert(undoRedoState);
 
             if (undoRedoState && reason == eValueChangedReasonPluginEdited) {
-                UndoCommandPtr cmd(new OfxUndoCommand(undoRedoText, undoRedoState));
+                UndoCommandPtr cmd = boost::make_shared<OfxUndoCommand>(undoRedoText, undoRedoState);
                 pushUndoCommand(cmd);
                 return true;
             }
@@ -2325,9 +2326,9 @@ OfxEffectInstance::getInverseDistortion(TimeValue time,
     if (!distortion->func) {
         if (!isDeprecatedTransformSupportEnabled) {
 
-            distortion->transformMatrix.reset( new Transform::Matrix3x3(tmpTransform[0], tmpTransform[1], tmpTransform[2],
-                                                                        tmpTransform[3], tmpTransform[4], tmpTransform[5],
-                                                                        tmpTransform[6], tmpTransform[7], tmpTransform[8]) );
+            distortion->transformMatrix = boost::make_shared<Transform::Matrix3x3>(tmpTransform[0], tmpTransform[1], tmpTransform[2],
+                                                                                   tmpTransform[3], tmpTransform[4], tmpTransform[5],
+                                                                                   tmpTransform[6], tmpTransform[7], tmpTransform[8]);
         } else {
             Transform::Matrix3x3 tmp(tmpTransform[0], tmpTransform[1], tmpTransform[2],
                                      tmpTransform[3], tmpTransform[4], tmpTransform[5],
@@ -2420,7 +2421,7 @@ OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const Rende
 
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
-    boost::shared_ptr<OfxGLContextEffectData> ofxData( new OfxGLContextEffectData(glContext->isGPUContext()) );
+    boost::shared_ptr<OfxGLContextEffectData> ofxData = boost::make_shared<OfxGLContextEffectData>(glContext->isGPUContext());
 
     *data = ofxData;
     void* ofxGLData = 0;

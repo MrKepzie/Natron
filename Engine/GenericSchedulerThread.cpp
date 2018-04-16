@@ -30,6 +30,9 @@
 #include <QtCore/QMetaType>
 #include <QtCore/QDebug>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/GenericSchedulerThreadWatcher.h"
 
 #ifdef DEBUG
@@ -46,7 +49,7 @@ class GenericSchedulerThreadMetaTypesRegistration
 public:
     inline GenericSchedulerThreadMetaTypesRegistration()
     {
-        qRegisterMetaType<ExecOnMTArgsPtr>("ExecOnMTArgsPtr");
+        qRegisterMetaType<GenericThreadExecOnMainThreadArgsPtr>("GenericThreadExecOnMainThreadArgsPtr");
     }
 };
 
@@ -132,7 +135,7 @@ GenericSchedulerThread::GenericSchedulerThread()
     , AbortableThread(this)
     , _imp( new GenericSchedulerThreadPrivate(this) )
 {
-    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(ExecOnMTArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(ExecOnMTArgsPtr)) );
+    QObject::connect( this, SIGNAL(executionOnMainThreadRequested(GenericThreadExecOnMainThreadArgsPtr)), this, SLOT(onExecutionOnMainThreadReceived(GenericThreadExecOnMainThreadArgsPtr)) );
 }
 
 GenericSchedulerThread::~GenericSchedulerThread()
@@ -221,6 +224,7 @@ void
 GenericSchedulerThread::waitForThreadToQuitQueued_main_thread(bool allowRestart)
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // scoped_ptr
     _imp->blockingOperationWatcher.reset( new GenericSchedulerThreadWatcher(this) );
     QObject::connect( _imp->blockingOperationWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherTaskFinishedEmitted()) );
     GenericSchedulerThreadWatcher::BlockingTaskEnum task = allowRestart ? GenericSchedulerThreadWatcher::eBlockingTaskWaitForQuitAllowRestart : GenericSchedulerThreadWatcher::eBlockingTaskWaitForQuitDisallowRestart;
@@ -383,6 +387,7 @@ void
 GenericSchedulerThread::waitForAbortToCompleteQueued_main_thread()
 {
     assert( QThread::currentThread() == qApp->thread() );
+    // scoped_ptr
     _imp->blockingOperationWatcher.reset( new GenericSchedulerThreadWatcher(this) );
     QObject::connect( _imp->blockingOperationWatcher.get(), SIGNAL(taskFinished(int,WatcherCallerArgsPtr)), this, SLOT(onWatcherTaskAbortedEmitted()) );
     _imp->blockingOperationWatcher->scheduleBlockingTask(GenericSchedulerThreadWatcher::eBlockingTaskWaitForAbort);
@@ -430,6 +435,11 @@ GenericSchedulerThread::resolveState()
 void
 GenericSchedulerThread::run()
 {
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     for (;; ) {
         // Get the args to do the work
         TaskQueueBehaviorEnum behavior = tasksQueueBehaviour();
@@ -544,7 +554,7 @@ GenericSchedulerThread::run()
 } // run()
 
 void
-GenericSchedulerThread::requestExecutionOnMainThread(const ExecOnMTArgsPtr& inArgs)
+GenericSchedulerThread::requestExecutionOnMainThread(const GenericThreadExecOnMainThreadArgsPtr& inArgs)
 {
     // We must be within the run() function
     assert(QThread::currentThread() == this);
@@ -562,7 +572,7 @@ GenericSchedulerThread::requestExecutionOnMainThread(const ExecOnMTArgsPtr& inAr
 }
 
 void
-GenericSchedulerThread::onExecutionOnMainThreadReceived(const ExecOnMTArgsPtr& args)
+GenericSchedulerThread::onExecutionOnMainThreadReceived(const GenericThreadExecOnMainThreadArgsPtr& args)
 {
     assert( QThread::currentThread() == qApp->thread() );
     executeOnMainThread(args);

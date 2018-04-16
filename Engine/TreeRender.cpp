@@ -32,6 +32,9 @@
 #include <QDebug>
 #include <QWaitCondition>
 
+#ifdef DEBUG
+#include "Global/FloatingPointExceptions.h"
+#endif
 #include "Engine/Image.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FrameViewRequest.h"
@@ -730,12 +733,31 @@ struct FrameViewRenderRunnable::Implementation
     }
 };
 
+
 FrameViewRenderRunnable::FrameViewRenderRunnable(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
 : QRunnable()
 , _imp(new FrameViewRenderRunnable::Implementation(sharedData, request))
 {
     assert(request);
 }
+
+
+// make_shared enabler (because make_shared needs access to the private constructor)
+// see https://stackoverflow.com/a/20961251/2607517
+struct FrameViewRenderRunnable::MakeSharedEnabler: public FrameViewRenderRunnable
+{
+    MakeSharedEnabler(const TreeRenderExecutionDataPtr& sharedData,
+                      const FrameViewRequestPtr& request) : FrameViewRenderRunnable(sharedData, request) {
+    }
+};
+
+
+FrameViewRenderRunnablePtr
+FrameViewRenderRunnable::create(const TreeRenderExecutionDataPtr& sharedData, const FrameViewRequestPtr& request)
+{
+    return boost::make_shared<FrameViewRenderRunnable::MakeSharedEnabler>(sharedData, request);
+}
+
 
 FrameViewRenderRunnable::~FrameViewRenderRunnable()
 {
@@ -744,7 +766,11 @@ FrameViewRenderRunnable::~FrameViewRenderRunnable()
 void
 FrameViewRenderRunnable::run()
 {
-
+#ifdef DEBUG
+    boost_adaptbx::floating_point::exception_trapping trap(boost_adaptbx::floating_point::exception_trapping::division_by_zero |
+                                                           boost_adaptbx::floating_point::exception_trapping::invalid |
+                                                           boost_adaptbx::floating_point::exception_trapping::overflow);
+#endif
     TreeRenderExecutionDataPtr sharedData = _imp->sharedData.lock();
 
     // Check the status of the execution tasks because another concurrent render might have failed
